@@ -24,6 +24,8 @@ export function SettingsView() {
     inboxNote: "",
     globalFilter: "",
     excludedFolders: "",
+    includedFolders: "",
+    obsidianVaultName: "",
     openaiModel: "",
     ntfyUrl: "",
     ntfyTopic: "",
@@ -40,6 +42,8 @@ export function SettingsView() {
       inboxNote: s.inboxNote,
       globalFilter: s.globalFilter,
       excludedFolders: s.excludedFolders.join(", "),
+      includedFolders: s.includedFolders.join(", "),
+      obsidianVaultName: s.obsidianVaultName,
       openaiModel: s.openaiModel,
       ntfyUrl: s.ntfyUrl,
       ntfyTopic: s.ntfyTopic,
@@ -53,6 +57,8 @@ export function SettingsView() {
       inboxNote: form.inboxNote,
       globalFilter: form.globalFilter,
       excludedFolders: form.excludedFolders.split(",").map((x) => x.trim()).filter(Boolean),
+      includedFolders: form.includedFolders.split(",").map((x) => x.trim()).filter(Boolean),
+      obsidianVaultName: form.obsidianVaultName,
       openaiModel: form.openaiModel,
       ntfyUrl: form.ntfyUrl,
       ntfyTopic: form.ntfyTopic,
@@ -97,6 +103,17 @@ export function SettingsView() {
           <div>
             <label className={label}>Excluded folders</label>
             <input className={field} value={form.excludedFolders} onChange={(e) => setForm({ ...form, excludedFolders: e.target.value })} placeholder="templates, .trash, attachments" />
+            <p className={hint} style={{ color: "var(--color-text-3)" }}>Comma-separated. These folders are never indexed.</p>
+          </div>
+          <div>
+            <label className={label}>Included folders (optional)</label>
+            <input className={field} value={form.includedFolders} onChange={(e) => setForm({ ...form, includedFolders: e.target.value })} placeholder="projects, work  (blank = whole vault)" />
+            <p className={hint} style={{ color: "var(--color-text-3)" }}>If set, ONLY these folders are scanned for tasks (the inbox note is always included). Leave blank to scan everything except excluded folders. Changing this rebuilds the index.</p>
+          </div>
+          <div>
+            <label className={label}>Obsidian vault name</label>
+            <input className={field} value={form.obsidianVaultName} onChange={(e) => setForm({ ...form, obsidianVaultName: e.target.value })} placeholder="(your vault's name in Obsidian)" />
+            <p className={hint} style={{ color: "var(--color-text-3)" }}>Used for “Open in Obsidian” links. Must match the vault name shown in the Obsidian app. Defaults to the vault folder name.</p>
           </div>
         </Section>
 

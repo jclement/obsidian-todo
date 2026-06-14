@@ -8,6 +8,8 @@ export interface TaskDTO {
   /** Current content hash of the file — the CAS token clients echo on writes. */
   file_hash: string;
   status: TaskStatus;
+  /** Raw checkbox character (e.g. ' ', 'x', '/', '!', 'R') for display. */
+  status_char: string;
   description: string;
   priority: Priority;
   due: string | null;
@@ -59,6 +61,7 @@ export function rowToDTO(r: TaskRow): TaskDTO {
     line: r.line,
     file_hash: r.file_hash,
     status: r.status,
+    status_char: /\[(.)\]/.exec(r.raw)?.[1] ?? " ",
     description: r.description,
     priority: r.priority,
     due: r.due,

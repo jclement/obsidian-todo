@@ -7,6 +7,7 @@ export interface Task {
   line: number;
   file_hash: string;
   status: TaskStatus;
+  status_char: string;
   description: string;
   priority: Priority;
   due: string | null;
@@ -49,6 +50,8 @@ export interface Settings {
   globalFilter: string;
   inboxNote: string;
   excludedFolders: string[];
+  includedFolders: string[];
+  obsidianVaultName: string;
   ntfyUrl: string;
   ntfyTopic: string;
   ntfyConfigured: boolean;

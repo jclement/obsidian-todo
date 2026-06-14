@@ -14,6 +14,10 @@ export interface AppSettings {
   inboxNote: string;
   /** Vault-relative folder prefixes to ignore when indexing. */
   excludedFolders: string[];
+  /** If non-empty, ONLY index tasks under these folders (whitelist). */
+  includedFolders: string[];
+  /** The vault's name in Obsidian, for `obsidian://open` deep links. */
+  obsidianVaultName: string;
   /** ntfy base URL, e.g. https://ntfy.sh (empty disables ntfy). */
   ntfyUrl: string;
   /** ntfy topic to publish due/overdue/reminder alerts to. */
@@ -38,6 +42,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   globalFilter: "#task",
   inboxNote: "Inbox.md",
   excludedFolders: ["templates", ".trash", "attachments"],
+  includedFolders: [],
+  obsidianVaultName: "",
   ntfyUrl: "",
   ntfyTopic: "",
   ntfyToken: "",
@@ -54,6 +60,8 @@ const KEY = {
   globalFilter: "global_filter",
   inboxNote: "inbox_note",
   excludedFolders: "excluded_folders",
+  includedFolders: "included_folders",
+  obsidianVaultName: "obsidian_vault_name",
   ntfyUrl: "ntfy_url",
   ntfyTopic: "ntfy_topic",
   ntfyToken: "ntfy_token",
@@ -78,6 +86,14 @@ export function loadSettings(db: Database): AppSettings {
       if (Array.isArray(arr)) s.excludedFolders = arr.map(String);
     } catch {}
   }
+  const incl = getSetting(db, KEY.includedFolders);
+  if (incl) {
+    try {
+      const arr = JSON.parse(incl);
+      if (Array.isArray(arr)) s.includedFolders = arr.map(String);
+    } catch {}
+  }
+  s.obsidianVaultName = getSetting(db, KEY.obsidianVaultName) ?? s.obsidianVaultName;
   s.ntfyUrl = getSetting(db, KEY.ntfyUrl) ?? s.ntfyUrl;
   s.ntfyTopic = getSetting(db, KEY.ntfyTopic) ?? s.ntfyTopic;
   s.ntfyToken = getSetting(db, KEY.ntfyToken) ?? s.ntfyToken;
@@ -107,6 +123,11 @@ export function saveSettings(db: Database, patch: Partial<AppSettings>): AppSett
     const arr = patch.excludedFolders.map((f) => f.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
     setSetting(db, KEY.excludedFolders, JSON.stringify(arr));
   }
+  if (patch.includedFolders !== undefined) {
+    const arr = patch.includedFolders.map((f) => f.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
+    setSetting(db, KEY.includedFolders, JSON.stringify(arr));
+  }
+  if (patch.obsidianVaultName !== undefined) setSetting(db, KEY.obsidianVaultName, patch.obsidianVaultName.trim());
   if (patch.ntfyUrl !== undefined) setSetting(db, KEY.ntfyUrl, patch.ntfyUrl.trim().replace(/\/+$/, ""));
   if (patch.ntfyTopic !== undefined) setSetting(db, KEY.ntfyTopic, patch.ntfyTopic.trim());
   if (patch.ntfyToken !== undefined) setSetting(db, KEY.ntfyToken, patch.ntfyToken.trim());
@@ -128,6 +149,8 @@ export function publicSettings(s: AppSettings) {
     globalFilter: s.globalFilter,
     inboxNote: s.inboxNote,
     excludedFolders: s.excludedFolders,
+    includedFolders: s.includedFolders,
+    obsidianVaultName: s.obsidianVaultName,
     ntfyUrl: s.ntfyUrl,
     ntfyTopic: s.ntfyTopic,
     ntfyConfigured: Boolean(s.ntfyUrl && s.ntfyTopic),
@@ -143,4 +166,22 @@ export function publicSettings(s: AppSettings) {
 
 export function isExcluded(path: string, excludedFolders: string[]): boolean {
   return excludedFolders.some((f) => path === f || path.startsWith(f + "/"));
+}
+
+function underAny(path: string, folders: string[]): boolean {
+  return folders.some((f) => path === f || path.startsWith(f + "/"));
+}
+
+/**
+ * Should this vault path be indexed for tasks?
+ * - Always index the configured inbox note (so capture never disappears).
+ * - Excluded folders win.
+ * - If includedFolders is non-empty, only paths under them are indexed
+ *   (whitelist); otherwise everything not excluded is indexed.
+ */
+export function isIndexable(path: string, s: Pick<AppSettings, "excludedFolders" | "includedFolders" | "inboxNote">): boolean {
+  if (path === s.inboxNote) return true;
+  if (isExcluded(path, s.excludedFolders)) return false;
+  if (s.includedFolders.length === 0) return true;
+  return underAny(path, s.includedFolders);
 }

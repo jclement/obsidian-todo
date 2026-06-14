@@ -20,7 +20,8 @@ import {
   type TaskFilter,
 } from "../../index/queries.ts";
 import { TaskConflictError, TaskNotFoundError, type TaskChanges } from "../../tasks/service.ts";
-import { isExcluded, publicSettings, type AppSettings } from "../../settings.ts";
+import { isIndexable, publicSettings, type AppSettings } from "../../settings.ts";
+import { basename } from "node:path";
 import { AiError, parseTextToTasks, transcribeAudio } from "../../ai/openai.ts";
 import type { Priority, TaskStatus } from "../../tasks/types.ts";
 
@@ -42,10 +43,10 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
 
   const noteList = (): { path: string; note: string }[] => {
     const out: { path: string; note: string }[] = [];
-    const excludes = ctx.getSettings().excludedFolders;
+    const s = ctx.getSettings();
     for (const { path } of ctx.store.walkFiles()) {
       if (!path.toLowerCase().endsWith(".md")) continue;
-      if (isExcluded(path, excludes)) continue;
+      if (!isIndexable(path, s)) continue;
       out.push({ path, note: (path.split("/").pop() ?? path).replace(/\.md$/i, "") });
     }
     out.sort((a, b) => a.note.localeCompare(b.note));
@@ -60,7 +61,8 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
       settings: publicSettings(s),
       counts: counts(db, s.inboxNote, ctx.now()),
       conflicts: ctx.indexer.conflictPaths(),
-      vaultName: config.publicUrl?.hostname ?? "Obsidian Todo",
+      // The Obsidian vault name for deep links — user-set, else the vault folder name.
+      vaultName: s.obsidianVaultName?.trim() || basename(config.vaultDir),
       sync: sync ? { state: sync.state, desired: sync.desired ?? false } : null,
     });
   });

@@ -70,6 +70,40 @@ describe("indexer", () => {
   });
 });
 
+describe("custom statuses & folder scoping", () => {
+  test("custom statuses ([/], [!], [?]) count as open, not hidden", async () => {
+    vault.write("Projects/Barreleye.md", [
+      "# Barreleye",
+      "- [/] #task in progress thing",
+      "- [!] #task important thing",
+      "- [?] #task question thing",
+      "- [x] #task done thing ✅ 2026-06-10",
+    ].join("\n"));
+    await indexer.sweep();
+    const open = queryTasks(db).map((t) => t.description);
+    expect(open).toContain("in progress thing");
+    expect(open).toContain("important thing");
+    expect(open).toContain("question thing");
+    expect(open).not.toContain("done thing");
+    // raw status char is surfaced
+    const imp = queryTasks(db).find((t) => t.description === "important thing")!;
+    expect(imp.status_char).toBe("!");
+  });
+
+  test("includedFolders whitelist limits indexing (inbox always kept)", async () => {
+    vault.write("work/W.md", "- [ ] #task work task\n");
+    vault.write("personal/P.md", "- [ ] #task personal task\n");
+    settings.includedFolders = ["work"];
+    db.exec("DELETE FROM files");
+    await indexer.sweep();
+    const descs = queryTasks(db).map((t) => t.description);
+    expect(descs).toContain("work task");
+    expect(descs).toContain("triage me"); // inbox always indexed
+    expect(descs).not.toContain("personal task");
+    settings.includedFolders = []; // reset for other tests
+  });
+});
+
 describe("views", () => {
   test("today = overdue + due today", () => {
     const today = viewToday(db, NOW).map((t) => t.description);

@@ -47,11 +47,11 @@ export function createTaskContext(args: {
   });
 
   const updateSettings = (patch: Partial<AppSettings>) => {
-    const prevFilter = settings.globalFilter;
-    const prevExcludes = JSON.stringify(settings.excludedFolders);
+    const before = JSON.stringify([settings.globalFilter, settings.excludedFolders, settings.includedFolders]);
     settings = saveSettings(db, patch);
-    // A changed gate or exclude set means the whole index must be rebuilt.
-    if (settings.globalFilter !== prevFilter || JSON.stringify(settings.excludedFolders) !== prevExcludes) {
+    const after = JSON.stringify([settings.globalFilter, settings.excludedFolders, settings.includedFolders]);
+    // A changed gate or folder scope means the whole index must be rebuilt.
+    if (before !== after) {
       db.exec("DELETE FROM files"); // cascades to tasks
       void indexer.sweep();
     }

@@ -84,17 +84,21 @@ export function TaskRow({
         />
         <button
           aria-label="Complete task"
+          title={`Status: [${task.status_char}]`}
           onClick={doComplete}
-          className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border transition-colors hover:border-[var(--color-accent)]"
-          style={{ borderColor: "var(--color-border-strong)" }}
+          className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border text-[0.65rem] font-bold leading-none transition-colors hover:border-[var(--color-accent)]"
+          style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}
         >
-          {task.status === "in_progress" && <span className="size-2 rounded-sm bg-[var(--color-blue)]" />}
+          {task.status === "done" ? "✓" : task.status === "cancelled" ? "✕" : task.status === "todo" ? "" : task.status_char}
         </button>
 
         <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onEdit(task)}>
           <div className="flex items-center gap-2">
             {prio && <span title={prio.label} className="text-xs">{prio.glyph}</span>}
-            <span className="truncate text-[0.95rem] leading-snug" style={{ color: "var(--color-text)" }}>
+            <span
+              className={clsx("truncate text-[0.95rem] leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
+              style={{ color: task.status === "done" || task.status === "cancelled" ? "var(--color-text-3)" : "var(--color-text)" }}
+            >
               {desc || "(untitled)"}
             </span>
           </div>

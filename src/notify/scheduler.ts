@@ -68,7 +68,7 @@ export class NotificationScheduler {
     const rows = this.db
       .query<TaskRow, [string, string]>(
         `SELECT t.*, f.hash AS file_hash FROM tasks t JOIN files f ON f.path = t.path
-         WHERE t.status IN ('todo','in_progress') AND t.reminder IS NOT NULL
+         WHERE t.status IN ('todo','in_progress','other') AND t.reminder IS NOT NULL
          AND (t.due = ? OR t.scheduled = ?)`,
       )
       .all(today, today);

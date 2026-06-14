@@ -7,7 +7,7 @@ import { addDaysYmd, todayYmd } from "../tasks/dates.ts";
 
 const SELECT = "SELECT t.*, f.hash AS file_hash FROM tasks t JOIN files f ON f.path = t.path";
 
-const OPEN: TaskStatus[] = ["todo", "in_progress"];
+const OPEN: TaskStatus[] = ["todo", "in_progress", "other"];
 
 // SQL fragment ranking priority high→low for ORDER BY.
 const PRIORITY_RANK =
@@ -103,7 +103,7 @@ export function viewToday(db: Database, now = new Date()): TaskDTO[] {
   const today = todayYmd(now);
   const rows = db
     .query<TaskRow, [string, string]>(
-      `${SELECT} WHERE t.status IN ('todo','in_progress')
+      `${SELECT} WHERE t.status IN ('todo','in_progress','other')
        AND ((t.due IS NOT NULL AND t.due <= ?) OR (t.scheduled IS NOT NULL AND t.scheduled <= ?))
        ORDER BY t.due IS NULL, t.due, ${PRIORITY_RANK}`,
     )
@@ -117,7 +117,7 @@ export function viewUpcoming(db: Database, days = 7, now = new Date()): TaskDTO[
   const to = addDaysYmd(todayYmd(now), days);
   const rows = db
     .query<TaskRow, [string, string, string, string]>(
-      `${SELECT} WHERE t.status IN ('todo','in_progress')
+      `${SELECT} WHERE t.status IN ('todo','in_progress','other')
        AND ((t.due BETWEEN ? AND ?) OR (t.scheduled BETWEEN ? AND ?))
        ORDER BY COALESCE(t.due, t.scheduled), ${PRIORITY_RANK}`,
     )
@@ -128,7 +128,7 @@ export function viewUpcoming(db: Database, days = 7, now = new Date()): TaskDTO[
 export function viewInbox(db: Database, inboxNote: string): TaskDTO[] {
   const rows = db
     .query<TaskRow, [string]>(
-      `${SELECT} WHERE t.status IN ('todo','in_progress') AND t.path = ? ORDER BY t.line`,
+      `${SELECT} WHERE t.status IN ('todo','in_progress','other') AND t.path = ? ORDER BY t.line`,
     )
     .all(inboxNote);
   return rows.map(rowToDTO);
@@ -146,9 +146,9 @@ export function listProjects(db: Database): ProjectSummary[] {
   return db
     .query<ProjectSummary, []>(
       `SELECT t.source_note AS note, t.path AS path,
-              SUM(CASE WHEN t.status IN ('todo','in_progress') THEN 1 ELSE 0 END) AS open_count,
+              SUM(CASE WHEN t.status IN ('todo','in_progress','other') THEN 1 ELSE 0 END) AS open_count,
               COUNT(*) AS total_count,
-              MIN(CASE WHEN t.status IN ('todo','in_progress') THEN t.due END) AS next_due
+              MIN(CASE WHEN t.status IN ('todo','in_progress','other') THEN t.due END) AS next_due
        FROM tasks t
        GROUP BY t.path
        HAVING open_count > 0
@@ -168,7 +168,7 @@ export function listTags(db: Database): TagSummary[] {
     .query<TagSummary, []>(
       `SELECT value AS tag, COUNT(*) AS count
        FROM tasks t, json_each(t.tags)
-       WHERE t.status IN ('todo','in_progress')
+       WHERE t.status IN ('todo','in_progress','other')
        GROUP BY value
        ORDER BY count DESC, tag`,
     )
@@ -187,6 +187,6 @@ export function counts(db: Database, inboxNote: string, now = new Date()): Count
     today: viewToday(db, now).length,
     upcoming: viewUpcoming(db, 7, now).length,
     inbox: viewInbox(db, inboxNote).length,
-    total_open: (db.query<{ n: number }, []>("SELECT COUNT(*) n FROM tasks WHERE status IN ('todo','in_progress')").get()?.n) ?? 0,
+    total_open: (db.query<{ n: number }, []>("SELECT COUNT(*) n FROM tasks WHERE status IN ('todo','in_progress','other')").get()?.n) ?? 0,
   };
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import type { Priority, Task } from "../types";
+import type { Priority, Task, TaskStatus } from "../types";
 import { useCancel, useComplete, useRemove, useUpdate } from "../queries";
 import { obsidianUrl } from "../lib/format";
 
@@ -35,6 +35,7 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const remove = useRemove();
 
   const [desc, setDesc] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("todo");
   const [priority, setPriority] = useState<Priority>("normal");
   const [due, setDue] = useState("");
   const [scheduled, setScheduled] = useState("");
@@ -44,6 +45,7 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   useEffect(() => {
     if (!task) return;
     setDesc(task.description);
+    setStatus(task.status);
     setPriority(task.priority);
     setDue(task.due ?? "");
     setScheduled(task.scheduled ?? "");
@@ -56,7 +58,7 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const save = () => {
     update.mutate({
       task,
-      changes: { description: desc, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
+      changes: { description: desc, status, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
     });
     onClose();
   };
@@ -89,12 +91,22 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
           <div className="grid grid-cols-2 gap-3 px-5 pt-2">
             <Field label="Due"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
             <Field label="Scheduled"><input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <Field label="Status">
+              <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className={field} style={fieldStyle}>
+                <option value="todo">To do</option>
+                <option value="in_progress">In progress</option>
+                <option value="done">Done</option>
+                <option value="cancelled">Cancelled</option>
+                {task.status === "other" && <option value="other">Custom [{task.status_char}]</option>}
+              </select>
+            </Field>
             <Field label="Priority">
               <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className={field} style={fieldStyle}>
                 {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </Field>
             <Field label="Reminder"><input type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <div />
             <div className="col-span-2">
               <Field label="Recurrence">
                 <input value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={field} style={fieldStyle} placeholder="every week · every 3 days when done" />

@@ -15,7 +15,7 @@ import { readFileSync, watch, type FSWatcher } from "node:fs";
 import type { Database } from "bun:sqlite";
 import { contentHash, type VaultStore } from "../vault/store.ts";
 import { parseTasksInFile } from "../tasks/file.ts";
-import { isExcluded, type AppSettings } from "../settings.ts";
+import { isIndexable, type AppSettings } from "../settings.ts";
 import { logger } from "../log.ts";
 
 const log = logger("indexer");
@@ -58,7 +58,7 @@ export class Indexer {
   reindexFile(path: string): boolean {
     if (!path.toLowerCase().endsWith(".md")) return false;
     const settings = this.getSettings();
-    if (isExcluded(path, settings.excludedFolders)) return false;
+    if (!isIndexable(path, settings)) return false;
 
     if (CONFLICT_RE.test(path)) {
       this.db
@@ -143,7 +143,7 @@ export class Indexer {
       const seenConflicts = new Set<string>();
       for (const { path } of this.store.walkFiles()) {
         if (!path.toLowerCase().endsWith(".md")) continue;
-        if (isExcluded(path, settings.excludedFolders)) continue;
+        if (!isIndexable(path, settings)) continue;
         if (CONFLICT_RE.test(path)) {
           conflicts = true;
           seenConflicts.add(path);
