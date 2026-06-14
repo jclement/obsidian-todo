@@ -51,6 +51,7 @@ export interface Settings {
   inboxNote: string;
   excludedFolders: string[];
   includedFolders: string[];
+  projectExcludeFolders: string[];
   obsidianVaultName: string;
   ntfyUrl: string;
   ntfyTopic: string;

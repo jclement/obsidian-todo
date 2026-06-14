@@ -18,6 +18,7 @@ import { TodayView } from "./views/TodayView";
 import { UpcomingView } from "./views/UpcomingView";
 import { InboxView } from "./views/InboxView";
 import { AllView } from "./views/AllView";
+import { CompletedView } from "./views/CompletedView";
 import { ProjectView } from "./views/ProjectView";
 import { TagView } from "./views/TagView";
 import { TagsView } from "./views/TagsView";
@@ -155,6 +156,7 @@ export function App() {
               <Route path="/upcoming" element={<UpcomingView />} />
               <Route path="/inbox" element={<InboxView />} />
               <Route path="/all" element={<AllView />} />
+              <Route path="/completed" element={<CompletedView />} />
               <Route path="/project" element={<ProjectView />} />
               <Route path="/tag/:tag" element={<TagView />} />
               <Route path="/tags" element={<TagsView />} />

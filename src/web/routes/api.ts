@@ -14,6 +14,7 @@ import {
   listTags,
   queryTasks,
   tasksInFile,
+  viewCompleted,
   viewInbox,
   viewToday,
   viewUpcoming,
@@ -82,10 +83,11 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
     if (view === "today") return c.json({ tasks: viewToday(db, ctx.now()) });
     if (view === "upcoming") return c.json({ tasks: viewUpcoming(db, q.days ? parseInt(q.days, 10) : 7, ctx.now()) });
     if (view === "inbox") return c.json({ tasks: viewInbox(db, s.inboxNote) });
+    if (view === "completed") return c.json({ tasks: viewCompleted(db) });
     return c.json({ tasks: queryTasks(db, filterFromQuery(q)) });
   });
 
-  app.get("/projects", (c) => c.json({ projects: listProjects(db) }));
+  app.get("/projects", (c) => c.json({ projects: listProjects(db, ctx.getSettings().projectExcludeFolders) }));
   app.get("/tags", (c) => c.json({ tags: listTags(db) }));
   app.get("/notes", (c) => c.json({ notes: noteList() }));
   app.get("/counts", (c) => c.json(counts(db, ctx.getSettings().inboxNote, ctx.now())));

@@ -42,6 +42,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <Item to="/upcoming" icon="▤" label="Upcoming" count={counts.data?.upcoming} />
       <Item to="/inbox" icon="✉" label="Inbox" count={counts.data?.inbox} />
       <Item to="/all" icon="≣" label="All open" count={counts.data?.total_open} />
+      <Item to="/completed" icon="✓" label="Completed" />
       <Item to="/search" icon="⌕" label="Search" />
 
       <SectionLabel>Projects</SectionLabel>

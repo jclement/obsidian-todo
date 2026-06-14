@@ -134,6 +134,17 @@ export function viewInbox(db: Database, inboxNote: string): TaskDTO[] {
   return rows.map(rowToDTO);
 }
 
+/** Logbook: recently completed + cancelled tasks, newest first. */
+export function viewCompleted(db: Database, limit = 200): TaskDTO[] {
+  const rows = db
+    .query<TaskRow, [number]>(
+      `${SELECT} WHERE t.status IN ('done','cancelled')
+       ORDER BY COALESCE(t.done, t.cancelled, '') DESC, t.path, t.line LIMIT ?`,
+    )
+    .all(limit);
+  return rows.map(rowToDTO);
+}
+
 export interface ProjectSummary {
   note: string;
   path: string;
@@ -142,8 +153,9 @@ export interface ProjectSummary {
   next_due: string | null;
 }
 
-export function listProjects(db: Database): ProjectSummary[] {
-  return db
+/** Notes with open tasks, excluding folders the user marked as non-projects. */
+export function listProjects(db: Database, excludeFolders: string[] = []): ProjectSummary[] {
+  const rows = db
     .query<ProjectSummary, []>(
       `SELECT t.source_note AS note, t.path AS path,
               SUM(CASE WHEN t.status IN ('todo','in_progress','other') THEN 1 ELSE 0 END) AS open_count,
@@ -155,6 +167,8 @@ export function listProjects(db: Database): ProjectSummary[] {
        ORDER BY next_due IS NULL, next_due, note`,
     )
     .all();
+  if (!excludeFolders.length) return rows;
+  return rows.filter((p) => !excludeFolders.some((f) => p.path === f || p.path.startsWith(f + "/")));
 }
 
 export interface TagSummary {

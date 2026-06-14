@@ -3,7 +3,7 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import { useDrag } from "@use-gesture/react";
 import clsx from "clsx";
 import type { Task } from "../types";
-import { useComplete } from "../queries";
+import { useComplete, useUncomplete } from "../queries";
 import { dueClass, dueLabel, PRIORITY_META, descWithoutTags, extractTags, obsidianUrl } from "../lib/format";
 import { Link } from "react-router-dom";
 
@@ -29,12 +29,14 @@ export function TaskRow({
   showNote?: boolean;
 }) {
   const complete = useComplete();
+  const uncomplete = useUncomplete();
   const [committing, setCommitting] = useState(false);
   const x = useMotionValue(0);
 
+  const done = task.status === "done" || task.status === "cancelled";
   const doComplete = () => {
     setCommitting(true);
-    complete.mutate(task);
+    (done ? uncomplete : complete).mutate(task);
   };
 
   // Swipe: right → complete (green), left → edit (purple). Touch-first.

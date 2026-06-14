@@ -76,6 +76,9 @@ export function useCancel() {
 export function useRemove() {
   return useDroppingMutation(api.remove);
 }
+export function useUncomplete() {
+  return useDroppingMutation(api.uncomplete);
+}
 
 export function useUpdate() {
   const qc = useQueryClient();

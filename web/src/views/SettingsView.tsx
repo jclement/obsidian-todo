@@ -25,6 +25,7 @@ export function SettingsView() {
     globalFilter: "",
     excludedFolders: "",
     includedFolders: "",
+    projectExcludeFolders: "",
     obsidianVaultName: "",
     openaiModel: "",
     ntfyUrl: "",
@@ -43,6 +44,7 @@ export function SettingsView() {
       globalFilter: s.globalFilter,
       excludedFolders: s.excludedFolders.join(", "),
       includedFolders: s.includedFolders.join(", "),
+      projectExcludeFolders: s.projectExcludeFolders.join(", "),
       obsidianVaultName: s.obsidianVaultName,
       openaiModel: s.openaiModel,
       ntfyUrl: s.ntfyUrl,
@@ -58,6 +60,7 @@ export function SettingsView() {
       globalFilter: form.globalFilter,
       excludedFolders: form.excludedFolders.split(",").map((x) => x.trim()).filter(Boolean),
       includedFolders: form.includedFolders.split(",").map((x) => x.trim()).filter(Boolean),
+      projectExcludeFolders: form.projectExcludeFolders.split(",").map((x) => x.trim()).filter(Boolean),
       obsidianVaultName: form.obsidianVaultName,
       openaiModel: form.openaiModel,
       ntfyUrl: form.ntfyUrl,
@@ -109,6 +112,11 @@ export function SettingsView() {
             <label className={label}>Included folders (optional)</label>
             <input className={field} value={form.includedFolders} onChange={(e) => setForm({ ...form, includedFolders: e.target.value })} placeholder="projects, work  (blank = whole vault)" />
             <p className={hint} style={{ color: "var(--color-text-3)" }}>If set, ONLY these folders are scanned for tasks (the inbox note is always included). Leave blank to scan everything except excluded folders. Changing this rebuilds the index.</p>
+          </div>
+          <div>
+            <label className={label}>Folders that aren't projects</label>
+            <input className={field} value={form.projectExcludeFolders} onChange={(e) => setForm({ ...form, projectExcludeFolders: e.target.value })} placeholder="weekly, journal, meetings" />
+            <p className={hint} style={{ color: "var(--color-text-3)" }}>Tasks in these folders still appear in Today/Upcoming/All, but the notes won't show up as Projects in the sidebar.</p>
           </div>
           <div>
             <label className={label}>Obsidian vault name</label>

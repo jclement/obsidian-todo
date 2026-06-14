@@ -16,6 +16,8 @@ const PRIORITIES: { value: Priority; label: string }[] = [
 const field =
   "w-full rounded-lg border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)]";
 const fieldStyle = { borderColor: "var(--color-border)" } as const;
+// Suppress password-manager autofill badges (the stray red square) on these fields.
+const noFill = { autoComplete: "off", "data-1p-ignore": true, "data-lpignore": "true", "data-form-type": "other" } as const;
 const lbl = "mb-1.5 block text-[0.7rem] font-medium uppercase tracking-wide";
 const lblStyle = { color: "var(--color-text-3)" } as const;
 
@@ -89,8 +91,8 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
 
           {/* Properties */}
           <div className="grid grid-cols-2 gap-3 px-5 pt-2">
-            <Field label="Due"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
-            <Field label="Scheduled"><input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <Field label="Due"><input type="date" {...noFill} value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <Field label="Scheduled"><input type="date" {...noFill} value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
             <Field label="Status">
               <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className={field} style={fieldStyle}>
                 <option value="todo">To do</option>
@@ -105,11 +107,10 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
                 {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </Field>
-            <Field label="Reminder"><input type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} className={field} style={fieldStyle} /></Field>
-            <div />
+            <Field label="Reminder"><input type="time" {...noFill} value={reminder} onChange={(e) => setReminder(e.target.value)} className={field} style={fieldStyle} /></Field>
             <div className="col-span-2">
               <Field label="Recurrence">
-                <input value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={field} style={fieldStyle} placeholder="every week · every 3 days when done" />
+                <input {...noFill} value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={field} style={fieldStyle} placeholder="every week · every 3 days when done" />
               </Field>
             </div>
           </div>

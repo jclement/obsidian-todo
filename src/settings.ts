@@ -16,6 +16,8 @@ export interface AppSettings {
   excludedFolders: string[];
   /** If non-empty, ONLY index tasks under these folders (whitelist). */
   includedFolders: string[];
+  /** Folders whose notes are indexed but NOT shown as projects (e.g. weekly notes). */
+  projectExcludeFolders: string[];
   /** The vault's name in Obsidian, for `obsidian://open` deep links. */
   obsidianVaultName: string;
   /** ntfy base URL, e.g. https://ntfy.sh (empty disables ntfy). */
@@ -43,6 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   inboxNote: "Inbox.md",
   excludedFolders: ["templates", ".trash", "attachments"],
   includedFolders: [],
+  projectExcludeFolders: [],
   obsidianVaultName: "",
   ntfyUrl: "",
   ntfyTopic: "",
@@ -61,6 +64,7 @@ const KEY = {
   inboxNote: "inbox_note",
   excludedFolders: "excluded_folders",
   includedFolders: "included_folders",
+  projectExcludeFolders: "project_exclude_folders",
   obsidianVaultName: "obsidian_vault_name",
   ntfyUrl: "ntfy_url",
   ntfyTopic: "ntfy_topic",
@@ -91,6 +95,13 @@ export function loadSettings(db: Database): AppSettings {
     try {
       const arr = JSON.parse(incl);
       if (Array.isArray(arr)) s.includedFolders = arr.map(String);
+    } catch {}
+  }
+  const projExcl = getSetting(db, KEY.projectExcludeFolders);
+  if (projExcl) {
+    try {
+      const arr = JSON.parse(projExcl);
+      if (Array.isArray(arr)) s.projectExcludeFolders = arr.map(String);
     } catch {}
   }
   s.obsidianVaultName = getSetting(db, KEY.obsidianVaultName) ?? s.obsidianVaultName;
@@ -127,6 +138,10 @@ export function saveSettings(db: Database, patch: Partial<AppSettings>): AppSett
     const arr = patch.includedFolders.map((f) => f.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
     setSetting(db, KEY.includedFolders, JSON.stringify(arr));
   }
+  if (patch.projectExcludeFolders !== undefined) {
+    const arr = patch.projectExcludeFolders.map((f) => f.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
+    setSetting(db, KEY.projectExcludeFolders, JSON.stringify(arr));
+  }
   if (patch.obsidianVaultName !== undefined) setSetting(db, KEY.obsidianVaultName, patch.obsidianVaultName.trim());
   if (patch.ntfyUrl !== undefined) setSetting(db, KEY.ntfyUrl, patch.ntfyUrl.trim().replace(/\/+$/, ""));
   if (patch.ntfyTopic !== undefined) setSetting(db, KEY.ntfyTopic, patch.ntfyTopic.trim());
@@ -150,6 +165,7 @@ export function publicSettings(s: AppSettings) {
     inboxNote: s.inboxNote,
     excludedFolders: s.excludedFolders,
     includedFolders: s.includedFolders,
+    projectExcludeFolders: s.projectExcludeFolders,
     obsidianVaultName: s.obsidianVaultName,
     ntfyUrl: s.ntfyUrl,
     ntfyTopic: s.ntfyTopic,

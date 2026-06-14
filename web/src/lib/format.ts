@@ -47,7 +47,9 @@ export function extractTags(desc: string): string[] {
   return [...desc.matchAll(/#([A-Za-z0-9_/-]*[A-Za-z_/-][A-Za-z0-9_/-]*)/g)].map((m) => m[1]!);
 }
 
-/** obsidian:// deep link to open the note. */
+/** obsidian:// deep link to open the note. Keep slashes literal (Obsidian
+ *  resolves vault-relative paths), encoding only within each path segment. */
 export function obsidianUrl(vaultName: string, path: string): string {
-  return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(path.replace(/\.md$/, ""))}`;
+  const file = path.replace(/\.md$/i, "").split("/").map(encodeURIComponent).join("/");
+  return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${file}`;
 }

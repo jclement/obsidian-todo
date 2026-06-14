@@ -3,7 +3,7 @@ import { openDatabase } from "../src/db/index.ts";
 import { VaultStore } from "../src/vault/store.ts";
 import { Indexer } from "../src/index/indexer.ts";
 import { TaskService, TaskConflictError } from "../src/tasks/service.ts";
-import { queryTasks, viewToday, viewUpcoming, listProjects, listTags, tasksInFile } from "../src/index/queries.ts";
+import { queryTasks, viewToday, viewUpcoming, viewCompleted, listProjects, listTags, tasksInFile } from "../src/index/queries.ts";
 import { DEFAULT_SETTINGS } from "../src/settings.ts";
 import type { Snapshotter } from "../src/snapshots/snapshotter.ts";
 import { tmpVault, type TmpVault } from "./helpers.ts";
@@ -101,6 +101,21 @@ describe("custom statuses & folder scoping", () => {
     expect(descs).toContain("triage me"); // inbox always indexed
     expect(descs).not.toContain("personal task");
     settings.includedFolders = []; // reset for other tests
+  });
+
+  test("completed view returns done + cancelled, not open", () => {
+    const done = viewCompleted(db).map((t) => t.description);
+    expect(done).toContain("already done");
+    expect(done).not.toContain("Migrate Production");
+  });
+
+  test("projectExcludeFolders hides folders from projects but keeps tasks", async () => {
+    vault.write("weekly/2026-W24.md", "- [ ] #task weekly thing 📅 2026-06-13\n");
+    await indexer.sweep();
+    expect(listProjects(db).some((p) => p.note === "2026-W24")).toBe(true);
+    expect(listProjects(db, ["weekly"]).some((p) => p.note === "2026-W24")).toBe(false);
+    // task still indexed / open
+    expect(queryTasks(db).some((t) => t.description === "weekly thing")).toBe(true);
   });
 });
 
