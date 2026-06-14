@@ -6,7 +6,7 @@ export function Layout(props: { title?: string; children: Child; nav?: boolean; 
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{props.title ? `${props.title} · Obsidian MCP` : "Obsidian MCP"}</title>
+        <title>{props.title ? `${props.title} · Obsidian Todo` : "Obsidian Todo"}</title>
         <link rel="stylesheet" href="/assets/app.css" />
         <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
         <script src="/assets/vendor/htmx.min.js" defer></script>
@@ -36,7 +36,7 @@ function Nav(props: { active?: string }) {
       <div class="mx-auto flex max-w-6xl items-center gap-1 px-6">
         <a href="/app" class="mr-4 flex shrink-0 items-center gap-2 py-3 font-semibold whitespace-nowrap text-text">
           <img src="/assets/logo.svg" alt="" class="h-5 w-5" />
-          Obsidian MCP
+          Obsidian Todo
         </a>
         {NAV_ITEMS.map(([href, label]) => (
           <a

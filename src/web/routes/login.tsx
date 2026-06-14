@@ -14,7 +14,7 @@ function LoginPage(props: { returnTo: string }) {
     <Layout title="Sign in" nav={false}>
       <div class="mx-auto mt-24 max-w-md rounded-lg border border-base-700 bg-base-900 p-8 text-center">
         <img src="/assets/logo.svg" alt="" class="mx-auto mb-4 h-12 w-12" />
-        <h1 class="mb-2 text-lg font-semibold">Obsidian MCP</h1>
+        <h1 class="mb-2 text-lg font-semibold">Obsidian Todo</h1>
         <p class="mb-6 text-sm text-text-muted">Sign in with your passkey to manage this server.</p>
         <input type="hidden" id="login-return-to" value={props.returnTo} />
         <button

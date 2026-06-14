@@ -23,7 +23,7 @@ function SetupPage() {
       <div class="mx-auto mt-24 max-w-md rounded-lg border border-base-700 bg-base-900 p-8">
         <div class="mb-6 flex items-center gap-3">
           <img src="/assets/logo.svg" alt="" class="h-8 w-8" />
-          <h1 class="text-lg font-semibold">Welcome to Obsidian MCP</h1>
+          <h1 class="text-lg font-semibold">Welcome to Obsidian Todo</h1>
         </div>
         <p class="mb-6 text-sm text-text-muted">
           To claim this server, enter the setup token from the server logs (<span class="font-mono">docker compose logs app</span>)

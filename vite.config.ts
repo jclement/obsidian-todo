@@ -6,7 +6,9 @@ import tailwindcss from "@tailwindcss/vite";
 // in production. In dev, `vite` runs on :5173 and proxies the backend prefixes
 // to the Bun server on :3000 (so cookies, the API, and the WebSocket all work).
 const BACKEND = "http://localhost:3000";
-const proxied = ["/api", "/login", "/logout", "/setup", "/oauth", "/app", "/mcp", "/.well-known", "/healthz"];
+// /assets serves the server-rendered pages' CSS + vendored JS (htmx, webauthn,
+// auth-client); login/setup break without it. /api carries the WebSocket.
+const proxied = ["/api", "/assets", "/login", "/logout", "/setup", "/oauth", "/mcp", "/.well-known", "/healthz"];
 
 export default defineConfig({
   root: "web",

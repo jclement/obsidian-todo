@@ -95,7 +95,7 @@ export async function startRegistration(db: Database, rp: RelyingParty) {
   const userHandle = getOrCreateUserHandle(db);
   const existing = listPasskeys(db);
   const options = await generateRegistrationOptions({
-    rpName: "Obsidian MCP",
+    rpName: "Obsidian Todo",
     rpID: rp.rpId,
     userID: userHandle,
     userName: "owner",
