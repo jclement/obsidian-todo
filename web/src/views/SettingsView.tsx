@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSettings, useSaveSettings } from "../queries";
+import { getThemePref, setThemePref, type ThemePref } from "../theme";
 
 const field = "w-full rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]";
 const label = "mb-1 block text-xs font-medium";
@@ -31,6 +32,7 @@ export function SettingsView() {
   });
   const [openaiKey, setOpenaiKey] = useState("");
   const [ntfyToken, setNtfyToken] = useState("");
+  const [theme, setTheme] = useState<ThemePref>(getThemePref());
 
   useEffect(() => {
     if (!s) return;
@@ -66,6 +68,21 @@ export function SettingsView() {
 
   return (
       <div className="space-y-4">
+        <Section title="Appearance" desc="Theme follows your system by default.">
+          <div className="inline-flex rounded-lg border p-0.5" style={{ borderColor: "var(--color-border)" }}>
+            {(["system", "light", "dark"] as ThemePref[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setTheme(t); setThemePref(t); }}
+                className="rounded-md px-3 py-1.5 text-sm capitalize"
+                style={theme === t ? { background: "var(--color-accent)", color: "white" } : { color: "var(--color-text-2)" }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </Section>
+
         <Section title="Capture" desc="Where new tasks go and which lines count as tasks.">
           <div>
             <label className={label}>Inbox note</label>

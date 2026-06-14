@@ -5,16 +5,28 @@ import { useCancel, useComplete, useRemove, useUpdate } from "../queries";
 import { obsidianUrl } from "../lib/format";
 
 const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: "highest", label: "🔺 Highest" },
-  { value: "high", label: "⏫ High" },
-  { value: "medium", label: "🔼 Medium" },
-  { value: "normal", label: "— Normal" },
-  { value: "low", label: "🔽 Low" },
-  { value: "lowest", label: "⏬ Lowest" },
+  { value: "highest", label: "Highest" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "normal", label: "Normal" },
+  { value: "low", label: "Low" },
+  { value: "lowest", label: "Lowest" },
 ];
 
-const field = "w-full rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]";
-const label = "text-xs font-medium";
+const field =
+  "w-full rounded-lg border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)]";
+const fieldStyle = { borderColor: "var(--color-border)" } as const;
+const lbl = "mb-1.5 block text-[0.7rem] font-medium uppercase tracking-wide";
+const lblStyle = { color: "var(--color-text-3)" } as const;
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className={lbl} style={lblStyle}>{label}</span>
+      {children}
+    </label>
+  );
+}
 
 export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; vaultName: string; onClose: () => void }) {
   const update = useUpdate();
@@ -44,105 +56,67 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const save = () => {
     update.mutate({
       task,
-      changes: {
-        description: desc,
-        priority,
-        due: due || null,
-        scheduled: scheduled || null,
-        recurrence: recurrence || null,
-        reminder: reminder || null,
-      },
+      changes: { description: desc, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
     });
     onClose();
   };
-
-  const act = (fn: () => void) => {
-    fn();
-    onClose();
-  };
+  const act = (fn: () => void) => { fn(); onClose(); };
 
   return (
     <Dialog.Root open={!!task} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92vh] w-full max-w-lg flex-col gap-3 overflow-y-auto rounded-t-2xl border p-5 shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92vh] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
         >
           <Dialog.Title className="sr-only">Edit task</Dialog.Title>
-          <textarea
-            autoFocus
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            rows={2}
-            className={field + " resize-none text-base"}
-            placeholder="Task description"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
-            }}
-          />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className={label}>Priority</div>
-              <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className={field}>
-                {PRIORITIES.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
+          {/* Title */}
+          <div className="px-5 pt-5">
+            <textarea
+              autoFocus
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              rows={1}
+              className="w-full resize-none rounded-lg bg-transparent text-[1.05rem] font-medium leading-snug outline-none placeholder:text-[var(--color-text-3)]"
+              placeholder="Task description"
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
+            />
+          </div>
+
+          {/* Properties */}
+          <div className="grid grid-cols-2 gap-3 px-5 pt-2">
+            <Field label="Due"><input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <Field label="Scheduled"><input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <Field label="Priority">
+              <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className={field} style={fieldStyle}>
+                {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
-            </div>
-            <div>
-              <div className={label}>Reminder</div>
-              <input type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} className={field} />
-            </div>
-            <div>
-              <div className={label}>Due</div>
-              <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={field} />
-            </div>
-            <div>
-              <div className={label}>Scheduled</div>
-              <input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} />
-            </div>
+            </Field>
+            <Field label="Reminder"><input type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} className={field} style={fieldStyle} /></Field>
             <div className="col-span-2">
-              <div className={label}>Recurrence</div>
-              <input
-                value={recurrence}
-                onChange={(e) => setRecurrence(e.target.value)}
-                className={field}
-                placeholder="e.g. every week, every 3 days when done"
-              />
+              <Field label="Recurrence">
+                <input value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={field} style={fieldStyle} placeholder="every week · every 3 days when done" />
+              </Field>
             </div>
           </div>
 
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <div className="flex gap-2">
-              <button onClick={() => act(() => complete.mutate(task))} className="rounded-md px-3 py-2 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}>
-                Complete
-              </button>
-              <button onClick={() => act(() => cancel.mutate(task))} className="rounded-md border px-3 py-2 text-sm" style={{ borderColor: "var(--color-border-strong)" }}>
-                Cancel task
-              </button>
-            </div>
-            <button
-              onClick={() => act(() => remove.mutate(task))}
-              className="rounded-md px-3 py-2 text-sm"
-              style={{ color: "var(--color-red)" }}
-            >
-              Delete
-            </button>
+          {/* Quick actions */}
+          <div className="mt-4 flex items-center gap-2 px-5">
+            <button onClick={() => act(() => complete.mutate(task))} className="rounded-lg px-3 py-1.5 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}>✓ Complete</button>
+            <button onClick={() => act(() => cancel.mutate(task))} className="rounded-lg border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Cancel task</button>
+            <button onClick={() => act(() => remove.mutate(task))} className="ml-auto rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)]" style={{ color: "var(--color-red)" }}>Delete</button>
           </div>
 
-          <div className="mt-1 flex items-center justify-between gap-2 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
-            <a href={obsidianUrl(vaultName, task.path)} className="text-xs" style={{ color: "var(--color-text-3)" }}>
+          {/* Footer */}
+          <div className="mt-4 flex items-center justify-between gap-2 border-t px-5 py-3" style={{ borderColor: "var(--color-border)" }}>
+            <a href={obsidianUrl(vaultName, task.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
               {task.path}:{task.line} ↗
             </a>
-            <div className="flex gap-2">
-              <Dialog.Close className="rounded-md border px-4 py-2 text-sm" style={{ borderColor: "var(--color-border-strong)" }}>
-                Close
-              </Dialog.Close>
-              <button onClick={save} className="rounded-md px-4 py-2 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>
-                Save
-              </button>
+            <div className="flex shrink-0 gap-2">
+              <Dialog.Close className="rounded-lg border px-4 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Close</Dialog.Close>
+              <button onClick={save} className="rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>
             </div>
           </div>
         </Dialog.Content>

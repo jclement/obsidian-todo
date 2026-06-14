@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSaveSettings } from "../queries";
 import type { Settings } from "../types";
 
@@ -11,6 +12,7 @@ type SyncMode = Settings["syncMode"];
 /** First-run setup. Blocks the app until completed (or skipped) the first time. */
 export function Wizard({ settings, mcpUrl }: { settings: Settings; mcpUrl: string }) {
   const save = useSaveSettings();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [globalFilter, setGlobalFilter] = useState(settings.globalFilter);
   const [inboxNote, setInboxNote] = useState(settings.inboxNote);
@@ -32,6 +34,8 @@ export function Wizard({ settings, mcpUrl }: { settings: Settings; mcpUrl: strin
       if (openaiKey) patch.openaiKey = openaiKey;
     }
     save.mutate(patch); // bootstrap refetch hides the wizard
+    // Obsidian Sync needs login + vault selection — hand off to that screen.
+    if (!skip && syncMode === "obsidian") navigate("/settings/sync");
   };
 
   const steps = [
@@ -67,7 +71,7 @@ export function Wizard({ settings, mcpUrl }: { settings: Settings; mcpUrl: strin
         <div className="space-y-2">
           {([
             ["external", "Syncthing / filesystem", "The vault folder is synced by something else (Syncthing, a bind mount, Dropbox…). Recommended for this setup."],
-            ["obsidian", "Obsidian Sync", "Use the built-in headless Obsidian Sync client. You'll configure credentials in Settings → Obsidian Sync. We'll warn you if it goes down."],
+            ["obsidian", "Obsidian Sync", "Use the built-in headless Obsidian Sync client. We'll take you to sign in and pick your vault on the next screen, and warn you if it goes down."],
             ["none", "No sync", "This is the only device touching the vault."],
           ] as [SyncMode, string, string][]).map(([val, title, desc]) => (
             <button

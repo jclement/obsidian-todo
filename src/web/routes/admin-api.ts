@@ -20,6 +20,7 @@ import {
 import { createApiToken, listApiTokens, revokeApiToken } from "../../auth/tokens.ts";
 import { listConnections, revokeClient } from "../../oauth/router.ts";
 import { counts } from "../../index/queries.ts";
+import { obInstalled, obListRemoteVaults, obLogin, obLoggedIn, obLogout, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
 
 export function adminApiRouter() {
   const app = new Hono<AppEnv>();
@@ -147,19 +148,67 @@ export function adminApiRouter() {
     return c.json({ ok: true });
   });
 
-  // --- Obsidian Sync supervisor ---
+  // --- Obsidian Sync: account + vault link ---
+  app.get("/sync/account", (c) => {
+    const { config } = deps(c);
+    return c.json({ installed: obInstalled(config), loggedIn: obLoggedIn(config) });
+  });
+  app.post("/sync/login", async (c) => {
+    const { db, config } = deps(c);
+    const { email, password, mfa } = await c.req.json();
+    if (!email || !password) return c.json({ error: "email and password required" }, 400);
+    const r = await obLogin(config, String(email), String(password), mfa ? String(mfa) : undefined);
+    if (!r.ok) return c.json({ error: (r.stderr || r.stdout || "Login failed").trim() }, 400);
+    recordAdmin(db, "sync.login", { target: String(email) });
+    return c.json({ ok: true, loggedIn: obLoggedIn(config) });
+  });
+  app.post("/sync/logout", async (c) => {
+    const { db, config } = deps(c);
+    await obLogout(config);
+    recordAdmin(db, "sync.logout");
+    return c.json({ ok: true, loggedIn: obLoggedIn(config) });
+  });
+  app.get("/sync/remote-vaults", async (c) => {
+    const { config } = deps(c);
+    const r = await obListRemoteVaults(config);
+    if (!r.ok) return c.json({ error: (r.stderr || "Could not list vaults").trim(), raw: r.stdout }, 400);
+    const vaults = r.stdout.split("\n").map((l) => l.trim()).filter((l) => l && !/^(name|vault|---)/i.test(l));
+    return c.json({ vaults, raw: r.stdout });
+  });
+  app.post("/sync/link", async (c) => {
+    const { db, config } = deps(c);
+    const { vault, password, deviceName } = await c.req.json();
+    if (!vault) return c.json({ error: "vault required" }, 400);
+    const r = await obSyncSetup(config, String(vault), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
+    if (!r.ok) return c.json({ error: (r.stderr || r.stdout || "Link failed").trim() }, 400);
+    recordAdmin(db, "sync.link", { target: String(vault) });
+    return c.json({ ok: true });
+  });
+  app.post("/sync/unlink", async (c) => {
+    const { db, config, sync } = deps(c);
+    if (sync) await sync.stop();
+    await obSyncUnlink(config);
+    recordAdmin(db, "sync.unlink");
+    return c.json({ ok: true });
+  });
+
+  // --- Obsidian Sync supervisor (the continuous process) ---
   app.get("/sync", (c) => {
     const { sync } = deps(c);
     return c.json(sync ? sync.status() : { state: "disabled" });
   });
-  app.post("/sync/:action", (c) => {
+  app.post("/sync/start", (c) => {
     const { db, sync } = deps(c);
     if (!sync) return c.json({ error: "sync disabled" }, 400);
-    const action = c.req.param("action");
-    if (action === "start") sync.start();
-    else if (action === "stop") void sync.stop();
-    else return c.json({ error: "unknown action" }, 400);
-    recordAdmin(db, `sync.${action}`);
+    sync.start();
+    recordAdmin(db, "sync.start");
+    return c.json(sync.status());
+  });
+  app.post("/sync/stop", async (c) => {
+    const { db, sync } = deps(c);
+    if (!sync) return c.json({ error: "sync disabled" }, 400);
+    await sync.stop();
+    recordAdmin(db, "sync.stop");
     return c.json(sync.status());
   });
 

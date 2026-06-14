@@ -5,8 +5,6 @@ export interface AppCtx {
   vaultName: string;
   aiEnabled: boolean;
   openEditor: (t: Task) => void;
-  openAiCapture: (initial?: string) => void;
-  focusQuickAdd: () => void;
   /** Note that quick-add targets (set by the project view). */
   captureTarget?: string;
   setCaptureTarget: (note: string | undefined) => void;

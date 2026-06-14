@@ -1,7 +1,49 @@
 @import "tailwindcss";
 
-/* Dark, Obsidian-themed. Accent #7c3aed. Dense but calm. */
+/* dark: applies when <html> (or an ancestor) has .dark — driven by theme.ts. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  --radius: 0.625rem;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+/*
+ * Tailwind v4's default border color is currentColor (light text → jarring
+ * white borders). Pin every border to the themed subtle border instead.
+ */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+}
+
+/* Light theme (default). */
+:root {
+  color-scheme: light;
+  --color-bg: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f1f4;
+  --color-surface-3: #e7e7ec;
+  --color-border: #e4e4e9;
+  --color-border-strong: #d0d0d8;
+  --color-text: #1b1b20;
+  --color-text-2: #56565f;
+  --color-text-3: #8c8c97;
+  --color-accent: #7c3aed;
+  --color-accent-2: #6d28d9;
+  --color-accent-soft: #efe9fd;
+  --color-red: #d62649;
+  --color-amber: #b06a05;
+  --color-green: #1a9e60;
+  --color-blue: #2f7fd6;
+}
+
+/* Dark theme. */
+.dark {
+  color-scheme: dark;
   --color-bg: #16161a;
   --color-surface: #1d1d22;
   --color-surface-2: #242429;
@@ -18,13 +60,6 @@
   --color-amber: #f0a93b;
   --color-green: #45c08a;
   --color-blue: #5aa7f0;
-
-  --radius: 0.625rem;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-}
-
-:root {
-  color-scheme: dark;
 }
 
 html,
@@ -42,7 +77,6 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* Slim, unobtrusive scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
@@ -56,7 +90,6 @@ body {
   border-radius: 99px;
 }
 
-/* Respect iOS safe areas for the bottom nav / FAB. */
 .safe-b {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -67,4 +100,14 @@ body {
 }
 .animate-in {
   animation: fadeIn 0.12s ease-out;
+}
+
+/* Voice-capture mic pulse */
+@keyframes pulseRing {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  70% { transform: scale(1.6); opacity: 0; }
+  100% { opacity: 0; }
+}
+.mic-ring {
+  animation: pulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }

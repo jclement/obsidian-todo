@@ -15,11 +15,13 @@ export function AiCaptureDialog({
   onClose,
   aiEnabled,
   initialText = "",
+  autoProcess = false,
 }: {
   open: boolean;
   onClose: () => void;
   aiEnabled: boolean;
   initialText?: string;
+  autoProcess?: boolean;
 }) {
   const [text, setText] = useState(initialText);
   const [drafts, setDrafts] = useState<TaskDraft[] | null>(null);
@@ -32,14 +34,17 @@ export function AiCaptureDialog({
       setText(initialText);
       setDrafts(null);
       setSkip(new Set());
+      if (autoProcess && initialText.trim()) void process(initialText);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialText]);
 
-  const process = async () => {
-    if (!text.trim()) return;
+  const process = async (override?: string) => {
+    const t = override ?? text;
+    if (!t.trim()) return;
     setLoading(true);
     try {
-      setDrafts(await api.aiParse(text));
+      setDrafts(await api.aiParse(t));
     } catch (e) {
       toast(e instanceof Error ? e.message : "AI parse failed", "error");
     } finally {
@@ -92,7 +97,7 @@ export function AiCaptureDialog({
                   Cancel
                 </Dialog.Close>
                 <button
-                  onClick={process}
+                  onClick={() => process()}
                   disabled={!aiEnabled || loading || !text.trim()}
                   className="rounded-md px-4 py-2 text-sm font-medium disabled:opacity-40"
                   style={{ background: "var(--color-accent)", color: "white" }}

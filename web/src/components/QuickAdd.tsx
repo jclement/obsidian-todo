@@ -12,15 +12,35 @@ const CHIP_COLOR: Record<string, string> = {
 
 export const QuickAdd = forwardRef<
   HTMLInputElement,
-  { targetNote?: string; aiEnabled: boolean; onOpenAi: () => void; autoFocus?: boolean; onSubmitted?: () => void }
->(function QuickAdd({ targetNote, aiEnabled, onOpenAi, autoFocus, onSubmitted }, ref) {
+  {
+    targetNote?: string;
+    aiEnabled: boolean;
+    onOpenAi: () => void;
+    autoFocus?: boolean;
+    onSubmitted?: () => void;
+    defaults?: { due?: string; tag?: string };
+    placeholder?: string;
+  }
+>(function QuickAdd({ targetNote, aiEnabled, onOpenAi, autoFocus, onSubmitted, defaults, placeholder }, ref) {
     const [text, setText] = useState("");
     const add = useAdd();
     const { draft, chips } = useMemo(() => parseQuickAdd(text), [text]);
 
+    // Inherit the current view's context unless the typed text overrides it.
+    const tagInText = !!defaults?.tag && new RegExp(`#${defaults.tag}(?![\\w/-])`).test(draft.description);
+    const inheritDue = defaults?.due && !draft.due;
+    const inheritTag = defaults?.tag && !tagInText;
+
     const submit = () => {
       if (!text.trim()) return;
-      add.mutate({ ...draft, target_note: draft.target_note ?? targetNote });
+      let description = draft.description;
+      if (inheritTag) description = `${description} #${defaults!.tag}`.trim();
+      add.mutate({
+        ...draft,
+        description,
+        due: draft.due ?? (inheritDue ? defaults!.due : undefined),
+        target_note: draft.target_note ?? targetNote,
+      });
       setText("");
       onSubmitted?.();
     };
@@ -38,7 +58,7 @@ export const QuickAdd = forwardRef<
               if (e.key === "Enter") submit();
               if (e.key === "Escape") (e.target as HTMLInputElement).blur();
             }}
-            placeholder="Add a task…  e.g. Fix OData 500 tomorrow #barreleye !!"
+            placeholder={placeholder ?? "Add a task…  e.g. Fix OData 500 tomorrow #barreleye !!"}
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-text-3)]"
           />
           <button
@@ -50,13 +70,19 @@ export const QuickAdd = forwardRef<
             ✨
           </button>
         </div>
-        {chips.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 border-t px-3 py-2 text-xs" style={{ borderColor: "var(--color-border)" }}>
+        {(chips.length > 0 || inheritDue || inheritTag) && (
+          <div className="flex flex-wrap items-center gap-1.5 border-t px-3 py-2 text-xs" style={{ borderColor: "var(--color-border)" }}>
             {chips.map((c, i) => (
               <span key={i} className="rounded-full px-2 py-0.5" style={{ background: "var(--color-surface-3)", color: CHIP_COLOR[c.kind] }}>
                 {c.label}
               </span>
             ))}
+            {(inheritDue || inheritTag) && (
+              <span className="flex items-center gap-1.5" title="Inherited from the current view">
+                {inheritDue && <span className="rounded-full px-2 py-0.5 opacity-60" style={{ background: "var(--color-surface-3)", color: CHIP_COLOR.due }}>📅 {defaults!.due}</span>}
+                {inheritTag && <span className="rounded-full px-2 py-0.5 opacity-60" style={{ background: "var(--color-surface-3)", color: CHIP_COLOR.tag }}>#{defaults!.tag}</span>}
+              </span>
+            )}
           </div>
         )}
       </div>

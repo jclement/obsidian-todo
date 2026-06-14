@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Route, Routes } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { todayStr } from "./lib/format";
 import { useBootstrap } from "./queries";
 import { AppContext } from "./app-context";
 import type { Task } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { UserMenu } from "./components/UserMenu";
-import { QuickAdd } from "./components/QuickAdd";
 import { CommandPalette } from "./components/CommandPalette";
+import { CaptureModal } from "./components/CaptureModal";
+import { BulkAddModal } from "./components/BulkAddModal";
+import { VoiceModal } from "./components/VoiceModal";
 import { AiCaptureDialog } from "./components/AiCaptureDialog";
 import { TaskEditor } from "./components/TaskEditor";
 import { Toaster } from "./components/Toaster";
@@ -28,24 +31,34 @@ import { ActivityView } from "./views/admin/ActivityView";
 import { SnapshotsView } from "./views/admin/SnapshotsView";
 import { SyncView } from "./views/admin/SyncView";
 import { GuidanceView } from "./views/admin/GuidanceView";
-import { CaptureSheet } from "./components/CaptureSheet";
 import { Wizard } from "./components/Wizard";
+
+type CaptureMode = null | "single" | "bulk" | "voice";
 
 export function App() {
   const boot = useBootstrap();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [capture, setCapture] = useState<CaptureMode>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiInitial, setAiInitial] = useState("");
+  const [aiAuto, setAiAuto] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
-  const [captureOpen, setCaptureOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [live, setLive] = useState<"connected" | "reconnecting">("reconnecting");
   const [captureTarget, setCaptureTarget] = useState<string | undefined>(undefined);
-  const quickAddRef = useRef<HTMLInputElement>(null);
+  const loc = useLocation();
 
-  const focusQuickAdd = useCallback(() => quickAddRef.current?.focus(), []);
-  const openAiCapture = useCallback((initial = "") => {
+  // New tasks inherit the current view: due today on Today, the tag on a tag
+  // view. (Project target is handled separately via captureTarget.)
+  const captureDefaults = useMemo<{ due?: string; tag?: string }>(() => {
+    if (loc.pathname === "/") return { due: todayStr() };
+    if (loc.pathname.startsWith("/tag/")) return { tag: decodeURIComponent(loc.pathname.slice("/tag/".length)) };
+    return {};
+  }, [loc.pathname]);
+
+  const openAi = useCallback((initial = "", auto = false) => {
     setAiInitial(initial);
+    setAiAuto(auto);
     setAiOpen(true);
   }, []);
 
@@ -55,6 +68,7 @@ export function App() {
     return () => window.removeEventListener("live:status", onStatus);
   }, []);
 
+  // Keyboard: ⌘K palette · q single · b bulk · v voice · a AI.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typing =
@@ -65,34 +79,31 @@ export function App() {
         setPaletteOpen((o) => !o);
         return;
       }
-      if (typing) return;
-      if (e.key === "c") {
-        e.preventDefault();
-        focusQuickAdd();
-      }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "q") { e.preventDefault(); setCapture("single"); }
+      else if (e.key === "b") { e.preventDefault(); setCapture("bulk"); }
+      else if (e.key === "v") { e.preventDefault(); setCapture("voice"); }
+      else if (e.key === "a") { e.preventDefault(); openAi(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focusQuickAdd]);
+  }, [openAi]);
 
   const settings = boot.data?.settings;
   const vaultName = boot.data?.vaultName ?? "Vault";
   const aiEnabled = !!settings?.openaiConfigured;
   const conflicts = boot.data?.conflicts ?? [];
-  // Warn only when the user actually relies on Obsidian Sync and it's unhealthy.
   const sync = boot.data?.sync;
   const syncDown =
     settings?.syncMode === "obsidian" && !!sync && sync.desired && sync.state !== "running" && sync.state !== "starting";
 
   return (
-    <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, openAiCapture, focusQuickAdd, captureTarget, setCaptureTarget }}>
+    <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, captureTarget, setCaptureTarget }}>
       <div className="flex h-full">
-        {/* Desktop sidebar */}
         <aside className="hidden w-64 shrink-0 border-r md:block" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
           <Sidebar />
         </aside>
 
-        {/* Mobile drawer */}
         {navOpen && (
           <div className="fixed inset-0 z-50 md:hidden" onClick={() => setNavOpen(false)}>
             <div className="absolute inset-0 bg-black/50" />
@@ -107,6 +118,14 @@ export function App() {
             <button className="md:hidden" onClick={() => setNavOpen(true)} aria-label="Menu">☰</button>
             <div className="flex-1" />
             <button
+              onClick={() => setCapture("single")}
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white"
+              style={{ background: "var(--color-accent)" }}
+              title="New task (q)"
+            >
+              <span className="text-base leading-none">+</span> Add
+            </button>
+            <button
               onClick={() => setPaletteOpen(true)}
               className="hidden items-center gap-2 rounded-md border px-2.5 py-1 text-xs sm:flex"
               style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-3)" }}
@@ -114,7 +133,7 @@ export function App() {
               <span>Search…</span>
               <kbd className="rounded bg-[var(--color-surface-3)] px-1">⌘K</kbd>
             </button>
-            <span title={live === "connected" ? "Live" : "Reconnecting"} className="size-2 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
+            <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="size-2 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
             <UserMenu name={vaultName} />
           </header>
 
@@ -131,9 +150,6 @@ export function App() {
           )}
 
           <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-3 pb-28 pt-4 sm:px-5 md:pb-8">
-            <div className="mb-4">
-              <QuickAdd ref={quickAddRef} aiEnabled={aiEnabled} onOpenAi={() => openAiCapture()} targetNote={captureTarget} />
-            </div>
             <Routes>
               <Route path="/" element={<TodayView />} />
               <Route path="/upcoming" element={<UpcomingView />} />
@@ -158,10 +174,12 @@ export function App() {
         </main>
       </div>
 
-      <MobileNav onAdd={() => setCaptureOpen(true)} />
-      <CaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} aiEnabled={aiEnabled} onOpenAi={() => openAiCapture()} />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={focusQuickAdd} onAiCapture={() => openAiCapture()} />
-      <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} />
+      <MobileNav onAdd={() => setCapture("single")} />
+      <CaptureModal open={capture === "single"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onOpenAi={() => openAi()} targetNote={captureTarget} defaults={captureDefaults} />
+      <BulkAddModal open={capture === "bulk"} onClose={() => setCapture(null)} targetNote={captureTarget} defaults={captureDefaults} />
+      <VoiceModal open={capture === "voice"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onTranscript={(t) => { setCapture(null); openAi(t, true); }} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={() => setCapture("single")} onBulkAdd={() => setCapture("bulk")} onVoice={() => setCapture("voice")} onAiCapture={() => openAi()} />
+      <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} autoProcess={aiAuto} />
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
       {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
       <Toaster />

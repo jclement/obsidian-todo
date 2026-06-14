@@ -5,6 +5,10 @@ import { toast } from "../toast";
 
 const item = "flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-3)]";
 
+function Group({ children }: { children: React.ReactNode }) {
+  return <div className="px-2.5 pb-0.5 pt-2 text-[0.7rem] font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-3)" }}>{children}</div>;
+}
+
 export function UserMenu({ name }: { name: string }) {
   const navigate = useNavigate();
   const reindex = async () => {
@@ -26,17 +30,19 @@ export function UserMenu({ name }: { name: string }) {
           style={{ background: "var(--color-surface-2)", borderColor: "var(--color-border)" }}
         >
           <div className="px-2.5 py-1.5 text-xs" style={{ color: "var(--color-text-3)" }}>{name}</div>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings")}>⚙ Settings</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={reindex}>↻ Reindex vault</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings")}>Settings</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={reindex}>Reindex vault</DropdownMenu.Item>
           <DropdownMenu.Separator className="my-1 h-px" style={{ background: "var(--color-border)" }} />
-          <div className="px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-3)" }}>Admin</div>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/passkeys")}>🔑 Passkeys</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/tokens")}>🎫 API tokens</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/connections")}>🔌 Connections</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/sync")}>⟳ Obsidian Sync</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/snapshots")}>⏱ Snapshots</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/activity")}>📋 Activity log</DropdownMenu.Item>
-          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/guidance")}>📖 MCP guidance</DropdownMenu.Item>
+          <Group>Account</Group>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/passkeys")}>Passkeys</DropdownMenu.Item>
+          <Group>Integration</Group>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/tokens")}>API tokens</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/connections")}>Connections</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/guidance")}>MCP guidance</DropdownMenu.Item>
+          <Group>Vault</Group>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/sync")}>Obsidian Sync</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/snapshots")}>Snapshots</DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => navigate("/settings/activity")}>Activity log</DropdownMenu.Item>
           <DropdownMenu.Separator className="my-1 h-px" style={{ background: "var(--color-border)" }} />
           <DropdownMenu.Item className={item} onSelect={() => (window.location.href = "/logout")} style={{ color: "var(--color-red)" }}>
             Sign out
