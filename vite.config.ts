@@ -21,7 +21,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: Object.fromEntries(
-      proxied.map((p) => [p, { target: BACKEND, changeOrigin: true, ws: p === "/api" }]),
+      // changeOrigin:false keeps the Host header as localhost:5173 so the backend
+      // (proxy-derived origin mode) resolves its public origin to :5173 — which is
+      // what the browser signs for WebAuthn. With changeOrigin:true the passkey
+      // ceremony fails with an origin mismatch (server thinks it's :3000).
+      proxied.map((p) => [p, { target: BACKEND, changeOrigin: false, ws: p === "/api" }]),
     ),
   },
 });
