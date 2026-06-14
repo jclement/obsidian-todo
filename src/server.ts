@@ -1,0 +1,131 @@
+import { randomBytes } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { basename, join } from "node:path";
+import { loadConfig } from "./config.ts";
+import { getSetting, openDatabase } from "./db/index.ts";
+import { createApp } from "./app.tsx";
+import { VaultStore } from "./vault/store.ts";
+import { LinkIndex } from "./vault/links.ts";
+import { Snapshotter } from "./snapshots/snapshotter.ts";
+import { createVaultContext } from "./mcp/context.ts";
+import { createTaskContext } from "./tasks/app-context.ts";
+import { websocket } from "./web/ws.ts";
+import { NotificationScheduler } from "./notify/scheduler.ts";
+import { passkeyCount } from "./auth/webauthn.ts";
+import { sweepExpired } from "./auth/sessions.ts";
+import { pruneAudit } from "./audit.ts";
+import { SyncSupervisor } from "./sync/supervisor.ts";
+import type { SetupState } from "./web/routes/setup.tsx";
+import { logger } from "./log.ts";
+
+const log = logger("server");
+
+const config = loadConfig();
+
+for (const dir of [config.dataDir, config.vaultDir, config.obConfigDir, config.snapshotsDir, join(config.dataDir, "db")]) {
+  mkdirSync(dir, { recursive: true });
+}
+
+const db = openDatabase(config.dbPath);
+
+// --- auth bootstrap ---------------------------------------------------------
+
+if (config.authReset) {
+  db.exec("DELETE FROM passkey_credentials; DELETE FROM ui_sessions;");
+  log.warn("AUTH_RESET=1: all passkeys and sessions wiped — setup mode re-entered. Unset AUTH_RESET and restart after re-registering.");
+}
+
+// In fixed mode, warn loudly if the configured host no longer matches the
+// host passkeys were registered under. In derived mode this is enforced
+// per-request with a user-facing message instead.
+const rpAtSetup = getSetting(db, "rp_id_at_setup");
+if (!config.derived && rpAtSetup && rpAtSetup !== config.rpId && passkeyCount(db) > 0) {
+  log.warn(
+    `PUBLIC_URL hostname changed (passkeys were registered for '${rpAtSetup}', now '${config.rpId}'). ` +
+      `Existing passkeys will NOT work. Restart with AUTH_RESET=1 to re-run setup. Static API tokens still work.`,
+  );
+}
+
+const setupState: SetupState = { token: null, pendingUserHandle: null };
+if (passkeyCount(db) === 0) {
+  setupState.token = `setup_${randomBytes(16).toString("hex")}`;
+  const where = config.publicUrl ? `${config.publicUrl.origin}/setup` : "https://<your-host>/setup";
+  // printed prominently; proves log access = box ownership
+  console.log("\n" + "=".repeat(72));
+  console.log("  FIRST-RUN SETUP");
+  console.log(`  Open ${where} and enter this token:`);
+  console.log(`\n      ${setupState.token}\n`);
+  console.log("  A new token is generated on every restart until setup completes.");
+  console.log("=".repeat(72) + "\n");
+}
+
+setInterval(() => {
+  sweepExpired(db);
+  pruneAudit(db);
+}, 3_600_000);
+sweepExpired(db);
+
+// --- vault, snapshots, sync --------------------------------------------------
+
+const store = new VaultStore(config.vaultDir);
+const links = new LinkIndex(store);
+const snapshotter = new Snapshotter(config.snapshotsDir, config.vaultDir, {
+  debounceMs: config.snapshotDebounceMs,
+  maxWaitMs: config.snapshotMaxWaitMs,
+  intervalMs: config.snapshotIntervalMs,
+});
+await snapshotter.init();
+snapshotter.startTimers();
+
+const vaultCtx = createVaultContext({
+  store,
+  links,
+  snapshotter,
+  vaultName: basename(config.vaultDir),
+  ownerGuidance: () => getSetting(db, "vault_instructions"),
+});
+
+const sync = new SyncSupervisor(config, db);
+sync.autostart();
+
+// --- task index, write service, live hub ------------------------------------
+
+const taskCtx = createTaskContext({ db, store, snapshotter });
+await taskCtx.indexer.sweep(); // build the index from the vault on boot
+taskCtx.indexer.start(); // watcher + periodic sweep safety net
+log.info(`indexed tasks; watching ${config.vaultDir} for changes`);
+
+const notifier = new NotificationScheduler(db, taskCtx);
+notifier.start();
+
+// --- HTTP ---------------------------------------------------------------------
+
+const app = createApp({ config, db, vaultCtx, taskCtx, setupState, sync });
+
+const server = Bun.serve({
+  port: config.port,
+  fetch: app.fetch,
+  websocket, // Bun-native WebSocket live sync
+  idleTimeout: 120, // SSE streams
+});
+
+log.info(
+  `listening on http://localhost:${server.port} (public: ${config.publicUrl?.origin ?? "derived from proxy headers"})`,
+);
+
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log.info(`${signal} received, shutting down`);
+  await server.stop();
+  taskCtx.indexer.stop();
+  notifier.stop();
+  await sync.shutdown(); // SIGTERM → grace → SIGKILL (ob ignores SIGTERM)
+  await snapshotter.shutdown(); // final commit if dirty
+  db.close();
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

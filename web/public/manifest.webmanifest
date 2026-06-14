@@ -1,0 +1,13 @@
+{
+  "name": "Obsidian Todo",
+  "short_name": "Todo",
+  "description": "A fast task manager on top of your Obsidian vault",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#16161a",
+  "theme_color": "#1a1a1f",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

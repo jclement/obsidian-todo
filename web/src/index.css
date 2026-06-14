@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* Dark, Obsidian-themed. Accent #7c3aed. Dense but calm. */
+@theme {
+  --color-bg: #16161a;
+  --color-surface: #1d1d22;
+  --color-surface-2: #242429;
+  --color-surface-3: #2c2c33;
+  --color-border: #34343c;
+  --color-border-strong: #43434d;
+  --color-text: #e6e6ea;
+  --color-text-2: #a8a8b3;
+  --color-text-3: #6f6f7b;
+  --color-accent: #7c3aed;
+  --color-accent-2: #9d6bff;
+  --color-accent-soft: #2a2140;
+  --color-red: #f0556a;
+  --color-amber: #f0a93b;
+  --color-green: #45c08a;
+  --color-blue: #5aa7f0;
+
+  --radius: 0.625rem;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Slim, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 99px;
+}
+
+/* Respect iOS safe areas for the bottom nav / FAB. */
+.safe-b {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fadeIn 0.12s ease-out;
+}
