@@ -8,7 +8,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "../../app.tsx";
 import { recordAdmin } from "../../audit.ts";
 import { listAudit, type AuditSource } from "../../audit.ts";
-import { getSetting, setSetting } from "../../db/index.ts";
+import { deleteSetting, getSetting, setSetting } from "../../db/index.ts";
 import { deleteOtherSessions } from "../../auth/sessions.ts";
 import {
   deletePasskey,
@@ -20,7 +20,7 @@ import {
 import { createApiToken, listApiTokens, revokeApiToken } from "../../auth/tokens.ts";
 import { listConnections, revokeClient } from "../../oauth/router.ts";
 import { counts } from "../../index/queries.ts";
-import { obInstalled, obListRemoteVaults, obLogin, obLoggedIn, obLogout, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
+import { obInstalled, obListRemoteVaults, obLogin, obLogout, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
 
 export function adminApiRouter() {
   const app = new Hono<AppEnv>();
@@ -148,46 +148,48 @@ export function adminApiRouter() {
     return c.json({ ok: true });
   });
 
-  // --- Obsidian Sync: account + vault link ---
+  // --- Obsidian Sync: two-step wizard (sign in → pick vault) ---
+  // Whether sync is set up is tracked by the `sync_configured` setting — not by
+  // sniffing for an auth-token file, which is unreliable across ob versions.
   app.get("/sync/account", (c) => {
-    const { config } = deps(c);
-    return c.json({ installed: obInstalled(config), loggedIn: obLoggedIn(config) });
+    const { db, config } = deps(c);
+    return c.json({ installed: obInstalled(config), configured: getSetting(db, "sync_configured") === "1" });
   });
+  // Sign in and, on success, return the remote vault listing so the client can
+  // advance straight to the pick-vault step (mirrors the original flow).
   app.post("/sync/login", async (c) => {
     const { db, config } = deps(c);
     const { email, password, mfa } = await c.req.json();
-    if (!email || !password) return c.json({ error: "email and password required" }, 400);
+    if (!email || !password) return c.json({ error: "Email and password are required." }, 400);
     const r = await obLogin(config, String(email), String(password), mfa ? String(mfa) : undefined);
-    if (!r.ok) return c.json({ error: (r.stderr || r.stdout || "Login failed").trim() }, 400);
+    if (!r.ok) {
+      recordAdmin(db, "sync.login", { status: "error", target: String(email) });
+      return c.json({ error: `Login failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
+    }
     recordAdmin(db, "sync.login", { target: String(email) });
-    return c.json({ ok: true, loggedIn: obLoggedIn(config) });
+    const listing = await obListRemoteVaults(config);
+    if (!listing.ok) return c.json({ error: `Signed in, but listing vaults failed: ${(listing.stderr || listing.stdout).trim().slice(0, 500)}` }, 400);
+    return c.json({ ok: true, vaults: listing.stdout.trim() || "(no vaults found)" });
   });
-  app.post("/sync/logout", async (c) => {
-    const { db, config } = deps(c);
-    await obLogout(config);
-    recordAdmin(db, "sync.logout");
-    return c.json({ ok: true, loggedIn: obLoggedIn(config) });
-  });
-  app.get("/sync/remote-vaults", async (c) => {
-    const { config } = deps(c);
-    const r = await obListRemoteVaults(config);
-    if (!r.ok) return c.json({ error: (r.stderr || "Could not list vaults").trim(), raw: r.stdout }, 400);
-    const vaults = r.stdout.split("\n").map((l) => l.trim()).filter((l) => l && !/^(name|vault|---)/i.test(l));
-    return c.json({ vaults, raw: r.stdout });
-  });
+  // Connect a remote vault into this server's vault dir. `password` is the
+  // end-to-end encryption password for encrypted vaults.
   app.post("/sync/link", async (c) => {
-    const { db, config } = deps(c);
+    const { db, config, sync } = deps(c);
     const { vault, password, deviceName } = await c.req.json();
-    if (!vault) return c.json({ error: "vault required" }, 400);
-    const r = await obSyncSetup(config, String(vault), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
-    if (!r.ok) return c.json({ error: (r.stderr || r.stdout || "Link failed").trim() }, 400);
-    recordAdmin(db, "sync.link", { target: String(vault) });
+    if (!vault) return c.json({ error: "Vault name or ID is required." }, 400);
+    const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
+    if (!r.ok) return c.json({ error: `Connect failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
+    setSetting(db, "sync_configured", "1");
+    recordAdmin(db, "sync.configure", { target: String(vault) });
+    sync?.start();
     return c.json({ ok: true });
   });
   app.post("/sync/unlink", async (c) => {
     const { db, config, sync } = deps(c);
     if (sync) await sync.stop();
     await obSyncUnlink(config);
+    await obLogout(config);
+    deleteSetting(db, "sync_configured");
     recordAdmin(db, "sync.unlink");
     return c.json({ ok: true });
   });

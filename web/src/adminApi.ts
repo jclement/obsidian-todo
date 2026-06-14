@@ -51,10 +51,8 @@ export const admin = {
 
   sync: () => req<SyncStatus>("GET", "/sync"),
   syncAction: (action: "start" | "stop") => req<SyncStatus>("POST", `/sync/${action}`),
-  syncAccount: () => req<{ installed: boolean; loggedIn: boolean }>("GET", "/sync/account"),
-  syncLogin: (email: string, password: string, mfa?: string) => req<{ ok: true; loggedIn: boolean }>("POST", "/sync/login", { email, password, mfa }),
-  syncLogout: () => req<{ ok: true; loggedIn: boolean }>("POST", "/sync/logout"),
-  syncRemoteVaults: () => req<{ vaults: string[]; raw: string }>("GET", "/sync/remote-vaults"),
+  syncAccount: () => req<{ installed: boolean; configured: boolean }>("GET", "/sync/account"),
+  syncLogin: (email: string, password: string, mfa?: string) => req<{ ok: true; vaults: string }>("POST", "/sync/login", { email, password, mfa }),
   syncLink: (vault: string, password?: string, deviceName?: string) => req<{ ok: true }>("POST", "/sync/link", { vault, password, deviceName }),
   syncUnlink: () => req<{ ok: true }>("POST", "/sync/unlink"),
 
