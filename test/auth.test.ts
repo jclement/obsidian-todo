@@ -411,16 +411,17 @@ describe("setup & login gating", () => {
     expect(login.status).toBe(200);
   });
 
-  test("/app redirects to login without a session", async () => {
-    const res = await fetch(`${base}/app`, { redirect: "manual" });
-    expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toContain("/login");
+  // The whole UI is now the SPA; the auth gate moved from /app to the JSON API.
+  test("/api/* returns 401 JSON without a session", async () => {
+    const res = await fetch(`${base}/api/bootstrap`);
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe("unauthorized");
   });
 
-  test("/app works with a session", async () => {
-    const res = await fetch(`${base}/app`, { headers: { Cookie: sessionCookieHeader() } });
+  test("/api/* works with a session", async () => {
+    const res = await fetch(`${base}/api/bootstrap`, { headers: { Cookie: sessionCookieHeader() } });
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("Dashboard");
+    expect(await res.json()).toHaveProperty("counts");
   });
 
   test("host guard rejects unexpected Host headers", async () => {

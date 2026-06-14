@@ -148,19 +148,20 @@ describe("audit + guidance end-to-end", () => {
     expect(config.find((e) => e.event === "sync.configure")).toMatchObject({ target: "My Vault" });
   });
 
-  test("activity page renders with source tabs and badges", async () => {
+  test("admin audit API returns entries, filterable by source", async () => {
     db.query("INSERT OR IGNORE INTO users (id, display_name, user_handle) VALUES (1, 'Owner', X'00')").run();
     const { createSession } = await import("../src/auth/sessions.ts");
     const { SESSION_COOKIE } = await import("../src/auth/middleware.ts");
     const cookie = `${SESSION_COOKIE}=${createSession(db, 1)}`;
-    const res = await fetch(`http://localhost:${server.port}/app/audit`, { headers: { Cookie: cookie } });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Activity");
-    expect(html).toContain("add_task");
 
-    const sec = await fetch(`http://localhost:${server.port}/app/audit?tab=security`, { headers: { Cookie: cookie } });
-    const secHtml = await sec.text();
-    expect(secHtml).toContain("token.create");
+    const res = await fetch(`http://localhost:${server.port}/api/admin/audit`, { headers: { Cookie: cookie } });
+    expect(res.status).toBe(200);
+    const all = (await res.json()).entries as { event: string }[];
+    expect(all.some((e) => e.event === "add_task")).toBe(true);
+
+    const sec = await fetch(`http://localhost:${server.port}/api/admin/audit?source=security`, { headers: { Cookie: cookie } });
+    const security = (await sec.json()).entries as { event: string }[];
+    expect(security.some((e) => e.event === "token.create")).toBe(true);
+    expect(security.every((e: any) => e.source === "security")).toBe(true);
   });
 });

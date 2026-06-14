@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useSettings, useSaveSettings } from "../queries";
-import { Page } from "./View";
 
 const field = "w-full rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]";
 const label = "mb-1 block text-xs font-medium";
@@ -63,10 +62,9 @@ export function SettingsView() {
     save.mutate(patch as any, { onSuccess: () => { setOpenaiKey(""); setNtfyToken(""); } });
   };
 
-  if (!s) return <Page title="Settings"><div /></Page>;
+  if (!s) return <div />;
 
   return (
-    <Page title="Settings">
       <div className="space-y-4">
         <Section title="Capture" desc="Where new tasks go and which lines count as tasks.">
           <div>
@@ -127,6 +125,5 @@ export function SettingsView() {
           </button>
         </div>
       </div>
-    </Page>
   );
 }

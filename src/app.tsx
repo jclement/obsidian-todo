@@ -20,18 +20,11 @@ import { abortRegistry, hashToken } from "./auth/tokens.ts";
 import { oauthInteractiveRouter, oauthPublicRouter, wellKnownRouter } from "./oauth/router.ts";
 import { setupRouter, type SetupState } from "./web/routes/setup.tsx";
 import { loginRouter } from "./web/routes/login.tsx";
-import { tokensRouter } from "./web/routes/tokens.tsx";
-import { passkeysRouter } from "./web/routes/passkeys.tsx";
-import { connectionsRouter } from "./web/routes/connections.tsx";
-import { dashboardRouter } from "./web/routes/dashboard.tsx";
-import { syncRouter } from "./web/routes/sync.tsx";
-import { snapshotsRouter } from "./web/routes/snapshots.tsx";
-import { auditRouter } from "./web/routes/audit.tsx";
-import { guidanceRouter } from "./web/routes/guidance.tsx";
 import { recordMcpCall } from "./audit.ts";
 import type { SyncSupervisor } from "./sync/supervisor.ts";
 import type { TaskAppContext } from "./tasks/app-context.ts";
 import { apiRouter } from "./web/routes/api.ts";
+import { adminApiRouter } from "./web/routes/admin-api.ts";
 import { upgradeWebSocket } from "./web/ws.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -120,6 +113,7 @@ export function createApp(deps: AppDeps) {
     }),
   );
   app.route("/api", apiRouter(deps.taskCtx, db, config));
+  app.route("/api/admin", adminApiRouter());
 
   // --- MCP endpoint (bearer auth) ---
   app.use("/mcp", mcpOriginGuard(), requireBearer(db));
@@ -145,22 +139,9 @@ export function createApp(deps: AppDeps) {
     return transport.handleRequest(c);
   });
 
-  // --- Management UI (session + CSRF) ---
-  // The security/admin screens stay server-rendered (same Obsidian theme); the
-  // SPA's user menu links into them. They live under /app/* so they win over the
-  // SPA catch-all below.
-  app.use("/app/*", requireSession(db, { redirect: true }), csrf({ origin: config.origin }));
-  app.use("/app", requireSession(db, { redirect: true }));
-  app.route("/app/tokens", tokensRouter(db, config));
-  app.route("/app/passkeys", passkeysRouter(db, config));
-  app.route("/app/connections", connectionsRouter(db));
-  app.route("/app/audit", auditRouter(db));
-  app.route("/app/guidance", guidanceRouter(db));
-  if (deps.sync) app.route("/app/sync", syncRouter(db, config, deps.sync));
-  app.route("/app/snapshots", snapshotsRouter(deps.vaultCtx, db));
-  app.route("/app", dashboardRouter(deps));
-
   // --- SPA: the task application at "/" + client-side routing fallback ---
+  // The whole UI (incl. admin/settings) is the React SPA; admin data is served
+  // by /api/admin above. Only setup/login/oauth-consent stay server-rendered.
   // Mounted last so every explicit route above wins. serveStatic falls through
   // to the index.html fallback when a path isn't a real file (client routes).
   app.use("/*", serveStatic({ root: SPA_DIR }));

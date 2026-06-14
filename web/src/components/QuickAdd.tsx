@@ -10,8 +10,10 @@ const CHIP_COLOR: Record<string, string> = {
   tag: "var(--color-text-2)",
 };
 
-export const QuickAdd = forwardRef<HTMLInputElement, { targetNote?: string; aiEnabled: boolean; onOpenAi: () => void }>(
-  function QuickAdd({ targetNote, aiEnabled, onOpenAi }, ref) {
+export const QuickAdd = forwardRef<
+  HTMLInputElement,
+  { targetNote?: string; aiEnabled: boolean; onOpenAi: () => void; autoFocus?: boolean; onSubmitted?: () => void }
+>(function QuickAdd({ targetNote, aiEnabled, onOpenAi, autoFocus, onSubmitted }, ref) {
     const [text, setText] = useState("");
     const add = useAdd();
     const { draft, chips } = useMemo(() => parseQuickAdd(text), [text]);
@@ -20,6 +22,7 @@ export const QuickAdd = forwardRef<HTMLInputElement, { targetNote?: string; aiEn
       if (!text.trim()) return;
       add.mutate({ ...draft, target_note: draft.target_note ?? targetNote });
       setText("");
+      onSubmitted?.();
     };
 
     return (
@@ -28,6 +31,7 @@ export const QuickAdd = forwardRef<HTMLInputElement, { targetNote?: string; aiEn
           <span style={{ color: "var(--color-accent)" }}>+</span>
           <input
             ref={ref}
+            autoFocus={autoFocus}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {

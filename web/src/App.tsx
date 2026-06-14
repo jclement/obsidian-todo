@@ -17,8 +17,18 @@ import { InboxView } from "./views/InboxView";
 import { AllView } from "./views/AllView";
 import { ProjectView } from "./views/ProjectView";
 import { TagView } from "./views/TagView";
+import { TagsView } from "./views/TagsView";
 import { SearchView } from "./views/SearchView";
 import { SettingsView } from "./views/SettingsView";
+import { SettingsLayout } from "./views/SettingsLayout";
+import { PasskeysView } from "./views/admin/PasskeysView";
+import { TokensView } from "./views/admin/TokensView";
+import { ConnectionsView } from "./views/admin/ConnectionsView";
+import { ActivityView } from "./views/admin/ActivityView";
+import { SnapshotsView } from "./views/admin/SnapshotsView";
+import { SyncView } from "./views/admin/SyncView";
+import { GuidanceView } from "./views/admin/GuidanceView";
+import { CaptureSheet } from "./components/CaptureSheet";
 
 export function App() {
   const boot = useBootstrap();
@@ -26,6 +36,7 @@ export function App() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiInitial, setAiInitial] = useState("");
   const [editing, setEditing] = useState<Task | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [live, setLive] = useState<"connected" | "reconnecting">("reconnecting");
   const [captureTarget, setCaptureTarget] = useState<string | undefined>(undefined);
@@ -119,14 +130,25 @@ export function App() {
               <Route path="/all" element={<AllView />} />
               <Route path="/project" element={<ProjectView />} />
               <Route path="/tag/:tag" element={<TagView />} />
+              <Route path="/tags" element={<TagsView />} />
               <Route path="/search" element={<SearchView />} />
-              <Route path="/settings" element={<SettingsView />} />
+              <Route path="/settings" element={<SettingsLayout />}>
+                <Route index element={<SettingsView />} />
+                <Route path="passkeys" element={<PasskeysView />} />
+                <Route path="tokens" element={<TokensView />} />
+                <Route path="connections" element={<ConnectionsView />} />
+                <Route path="sync" element={<SyncView />} />
+                <Route path="snapshots" element={<SnapshotsView />} />
+                <Route path="activity" element={<ActivityView />} />
+                <Route path="guidance" element={<GuidanceView />} />
+              </Route>
             </Routes>
           </div>
         </main>
       </div>
 
-      <MobileNav onAdd={() => focusQuickAdd()} />
+      <MobileNav onAdd={() => setCaptureOpen(true)} />
+      <CaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} aiEnabled={aiEnabled} onOpenAi={() => openAiCapture()} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={focusQuickAdd} onAiCapture={() => openAiCapture()} />
       <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} />
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
