@@ -112,7 +112,7 @@ export function createApp(deps: AppDeps) {
       };
     }),
   );
-  app.route("/api", apiRouter(deps.taskCtx, db, config));
+  app.route("/api", apiRouter(deps.taskCtx, db, config, () => deps.sync?.status() ?? null));
   app.route("/api/admin", adminApiRouter());
 
   // --- MCP endpoint (bearer auth) ---

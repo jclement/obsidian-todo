@@ -27,7 +27,7 @@ import type { Priority, TaskStatus } from "../../tasks/types.ts";
 const PRIORITIES: Priority[] = ["highest", "high", "medium", "normal", "low", "lowest"];
 const STATUSES: TaskStatus[] = ["todo", "done", "in_progress", "cancelled", "other"];
 
-export function apiRouter(ctx: TaskAppContext, db: Database, config: Config) {
+export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syncStatus?: () => { state: string; desired?: boolean } | null) {
   const app = new Hono();
 
   // Translate domain errors to HTTP. Everything in this router runs through it.
@@ -55,11 +55,13 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config) {
   // --- bootstrap / meta ---
   app.get("/bootstrap", (c) => {
     const s = ctx.getSettings();
+    const sync = syncStatus?.() ?? null;
     return c.json({
       settings: publicSettings(s),
       counts: counts(db, s.inboxNote, ctx.now()),
       conflicts: ctx.indexer.conflictPaths(),
       vaultName: config.publicUrl?.hostname ?? "Obsidian Todo",
+      sync: sync ? { state: sync.state, desired: sync.desired ?? false } : null,
     });
   });
 

@@ -57,6 +57,8 @@ export interface Settings {
   openaiModel: string;
   notifyHour: number;
   notifyEnabled: boolean;
+  syncMode: "obsidian" | "external" | "none";
+  onboarded: boolean;
 }
 
 export interface Bootstrap {
@@ -64,6 +66,7 @@ export interface Bootstrap {
   counts: Counts;
   conflicts: string[];
   vaultName: string;
+  sync: { state: string; desired: boolean } | null;
 }
 
 export interface TaskDraft {

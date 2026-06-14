@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { useBootstrap } from "./queries";
 import { AppContext } from "./app-context";
 import type { Task } from "./types";
@@ -29,6 +29,7 @@ import { SnapshotsView } from "./views/admin/SnapshotsView";
 import { SyncView } from "./views/admin/SyncView";
 import { GuidanceView } from "./views/admin/GuidanceView";
 import { CaptureSheet } from "./components/CaptureSheet";
+import { Wizard } from "./components/Wizard";
 
 export function App() {
   const boot = useBootstrap();
@@ -78,6 +79,10 @@ export function App() {
   const vaultName = boot.data?.vaultName ?? "Vault";
   const aiEnabled = !!settings?.openaiConfigured;
   const conflicts = boot.data?.conflicts ?? [];
+  // Warn only when the user actually relies on Obsidian Sync and it's unhealthy.
+  const sync = boot.data?.sync;
+  const syncDown =
+    settings?.syncMode === "obsidian" && !!sync && sync.desired && sync.state !== "running" && sync.state !== "starting";
 
   return (
     <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, openAiCapture, focusQuickAdd, captureTarget, setCaptureTarget }}>
@@ -113,6 +118,12 @@ export function App() {
             <UserMenu name={vaultName} />
           </header>
 
+          {syncDown && (
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-2 text-sm" style={{ background: "var(--color-surface-2)", borderColor: "var(--color-amber)", color: "var(--color-amber)" }}>
+              <span>⚠ Obsidian Sync is {sync!.state} — edits won't reach your other devices until it reconnects. The vault on disk still works.</span>
+              <Link to="/settings/sync" className="shrink-0 underline">Fix</Link>
+            </div>
+          )}
           {conflicts.length > 0 && (
             <div className="border-b px-4 py-2 text-sm" style={{ background: "var(--color-surface-2)", borderColor: "var(--color-red)", color: "var(--color-amber)" }}>
               ⚠ {conflicts.length} sync-conflict file(s) in the vault — resolve them in Obsidian: {conflicts.slice(0, 3).join(", ")}
@@ -152,6 +163,7 @@ export function App() {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={focusQuickAdd} onAiCapture={() => openAiCapture()} />
       <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} />
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
+      {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
       <Toaster />
     </AppContext.Provider>
   );

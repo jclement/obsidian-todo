@@ -28,6 +28,10 @@ export interface AppSettings {
   notifyHour: number;
   /** Whether the notification scheduler is active. */
   notifyEnabled: boolean;
+  /** How the vault is kept in sync — drives whether we warn when `ob` is down. */
+  syncMode: "obsidian" | "external" | "none";
+  /** Whether the first-run wizard has been completed. */
+  onboarded: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -41,6 +45,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   openaiModel: "gpt-4o-mini",
   notifyHour: 8,
   notifyEnabled: false,
+  syncMode: "external",
+  onboarded: false,
 };
 
 // settings-table keys
@@ -55,6 +61,8 @@ const KEY = {
   openaiModel: "openai_model",
   notifyHour: "notify_hour",
   notifyEnabled: "notify_enabled",
+  syncMode: "sync_mode",
+  onboarded: "onboarded",
 } as const;
 
 export function loadSettings(db: Database): AppSettings {
@@ -78,6 +86,9 @@ export function loadSettings(db: Database): AppSettings {
   const hour = getSetting(db, KEY.notifyHour);
   if (hour !== null) s.notifyHour = Math.min(23, Math.max(0, parseInt(hour, 10) || 0));
   s.notifyEnabled = getSetting(db, KEY.notifyEnabled) === "1";
+  const mode = getSetting(db, KEY.syncMode);
+  if (mode === "obsidian" || mode === "external" || mode === "none") s.syncMode = mode;
+  s.onboarded = getSetting(db, KEY.onboarded) === "1";
   return s;
 }
 
@@ -103,6 +114,8 @@ export function saveSettings(db: Database, patch: Partial<AppSettings>): AppSett
   if (patch.openaiModel !== undefined) setSetting(db, KEY.openaiModel, patch.openaiModel.trim() || "gpt-4o-mini");
   if (patch.notifyHour !== undefined) setSetting(db, KEY.notifyHour, String(Math.min(23, Math.max(0, patch.notifyHour))));
   if (patch.notifyEnabled !== undefined) setSetting(db, KEY.notifyEnabled, patch.notifyEnabled ? "1" : "0");
+  if (patch.syncMode !== undefined) setSetting(db, KEY.syncMode, patch.syncMode);
+  if (patch.onboarded !== undefined) setSetting(db, KEY.onboarded, patch.onboarded ? "1" : "0");
   return loadSettings(db);
 }
 
@@ -123,6 +136,8 @@ export function publicSettings(s: AppSettings) {
     openaiModel: s.openaiModel,
     notifyHour: s.notifyHour,
     notifyEnabled: s.notifyEnabled,
+    syncMode: s.syncMode,
+    onboarded: s.onboarded,
   };
 }
 
