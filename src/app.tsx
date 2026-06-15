@@ -146,6 +146,10 @@ export function createApp(deps: AppDeps) {
   // to the index.html fallback when a path isn't a real file (client routes).
   app.use("/*", serveStatic({ root: SPA_DIR }));
   app.get("/*", (c) => {
+    // Only client-side ROUTES fall back to index.html. A request that looks like
+    // a file (has an extension, e.g. a stale /static/*.js) must 404 — never
+    // return HTML for it, or the browser gets text/html for a module script.
+    if (/\.[a-z0-9]+$/i.test(c.req.path)) return c.text("Not found", 404);
     const index = join(SPA_DIR, "index.html");
     if (existsSync(index)) return c.html(readFileSync(index, "utf8"));
     return c.text("SPA not built. Run `mise run build` (or `vite build`). In dev, open the Vite dev server.", 503);
