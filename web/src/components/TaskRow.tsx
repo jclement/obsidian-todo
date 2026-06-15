@@ -101,8 +101,8 @@ export function TaskRow({
           <div className="flex items-center gap-2">
             {prio && <span title={prio.label} className="text-xs">{prio.glyph}</span>}
             <span
-              className={clsx("truncate text-[0.95rem] leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
-              style={{ color: task.status === "done" || task.status === "cancelled" ? "var(--color-text-3)" : "var(--color-text)" }}
+              className={clsx("min-w-0 break-words text-[0.95rem] leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
+              style={{ color: task.status === "done" || task.status === "cancelled" ? "var(--color-text)" : "var(--color-text)", opacity: task.status === "done" || task.status === "cancelled" ? 0.55 : 1 }}
             >
               {desc ? <Inline text={desc} onWikilink={openInObsidian} /> : "(untitled)"}
             </span>
