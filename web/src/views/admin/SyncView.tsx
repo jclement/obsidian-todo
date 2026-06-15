@@ -40,6 +40,8 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
   const [vault, setVault] = useState("");
   const [encPassword, setEncPassword] = useState("");
   const [device, setDevice] = useState("obsidian-todo");
+  const [configs, setConfigs] = useState("community-plugin-data,core-plugin-data,app,appearance");
+  const [fileTypes, setFileTypes] = useState("image,pdf");
 
   const login = useMutation({
     mutationFn: () => admin.syncLogin(email, password, mfa || undefined),
@@ -47,7 +49,7 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
     onError: (e) => toast(e instanceof Error ? e.message : "Login failed", "error"),
   });
   const link = useMutation({
-    mutationFn: () => admin.syncLink(vault, encPassword || undefined, device),
+    mutationFn: () => admin.syncLink({ vault, password: encPassword || undefined, deviceName: device, configs, fileTypes }),
     onSuccess: () => { toast("Connected — sync started", "success"); onConfigured(); },
     onError: (e) => toast(e instanceof Error ? e.message : "Connect failed", "error"),
   });
@@ -81,6 +83,14 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
         <input className={field} style={inputStyle} placeholder="Vault name or ID (exactly as listed)" value={vault} onChange={(e) => setVault(e.target.value)} />
         <input className={field} style={inputStyle} type="password" placeholder="Encryption password (end-to-end encrypted vaults only)" value={encPassword} onChange={(e) => setEncPassword(e.target.value)} />
         <input className={field} style={inputStyle} placeholder="Device name" value={device} onChange={(e) => setDevice(e.target.value)} />
+        <label className="block text-xs" style={{ color: "var(--color-text-3)" }}>
+          Config categories to sync (lets the app read your Tasks-plugin settings; blank to skip)
+          <input className={field + " mt-1"} style={inputStyle} value={configs} onChange={(e) => setConfigs(e.target.value)} placeholder="community-plugin-data,core-plugin-data" />
+        </label>
+        <label className="block text-xs" style={{ color: "var(--color-text-3)" }}>
+          Attachment types to sync (blank to skip)
+          <input className={field + " mt-1"} style={inputStyle} value={fileTypes} onChange={(e) => setFileTypes(e.target.value)} placeholder="image,pdf" />
+        </label>
         <p className="text-xs" style={{ color: "var(--color-amber)" }}>
           Connecting downloads the remote vault into this server's vault folder and starts bidirectional sync. Existing
           local notes will sync up too.

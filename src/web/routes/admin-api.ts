@@ -20,6 +20,7 @@ import {
 import { createApiToken, listApiTokens, revokeApiToken } from "../../auth/tokens.ts";
 import { listConnections, revokeClient } from "../../oauth/router.ts";
 import { counts } from "../../index/queries.ts";
+import { readTasksPluginConfig } from "../../vault/tasks-plugin.ts";
 import { obInstalled, obListRemoteVaults, obLogin, obLogout, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
 
 export function adminApiRouter() {
@@ -175,9 +176,12 @@ export function adminApiRouter() {
   // end-to-end encryption password for encrypted vaults.
   app.post("/sync/link", async (c) => {
     const { db, config, sync } = deps(c);
-    const { vault, password, deviceName } = await c.req.json();
+    const { vault, password, deviceName, configs, fileTypes } = await c.req.json();
     if (!vault) return c.json({ error: "Vault name or ID is required." }, 400);
-    const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
+    const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo", {
+      configs: typeof configs === "string" ? configs : undefined,
+      fileTypes: typeof fileTypes === "string" ? fileTypes : undefined,
+    });
     if (!r.ok) return c.json({ error: `Connect failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
     setSetting(db, "sync_configured", "1");
     recordAdmin(db, "sync.configure", { target: String(vault) });
@@ -213,6 +217,9 @@ export function adminApiRouter() {
     recordAdmin(db, "sync.stop");
     return c.json(sync.status());
   });
+
+  // --- Import config from the Obsidian Tasks plugin ---
+  app.get("/tasks-config", async (c) => c.json(await readTasksPluginConfig(deps(c).taskCtx.store)));
 
   // --- MCP guidance ---
   app.get("/guidance", (c) => c.json({ guidance: getSetting(deps(c).db, "vault_instructions") ?? "" }));

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSettings, useSaveSettings } from "../queries";
+import { admin } from "../adminApi";
+import { toast } from "../toast";
 import { getThemePref, setThemePref, type ThemePref } from "../theme";
 import type { StatusDef, StatusType } from "../types";
 
@@ -82,6 +84,21 @@ export function SettingsView() {
   const updateStatus = (i: number, patch: Partial<StatusDef>) =>
     setStatusList((cur) => cur.map((st, j) => (j === i ? { ...st, ...patch } : st)));
 
+  const importFromTasks = async () => {
+    try {
+      const cfg = await admin.tasksConfig();
+      if (!cfg.available) {
+        toast("No Obsidian Tasks plugin config found in the vault (.obsidian must be synced).", "info");
+        return;
+      }
+      if (cfg.globalFilter) setForm((f) => ({ ...f, globalFilter: cfg.globalFilter! }));
+      if (cfg.statuses?.length) setStatusList(cfg.statuses.map((s) => ({ symbol: s.symbol || " ", name: s.name, type: s.type as StatusType })));
+      toast("Imported from the Tasks plugin — review and Save", "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Import failed", "error");
+    }
+  };
+
   if (!s) return <div />;
 
   return (
@@ -135,6 +152,9 @@ export function SettingsView() {
         </Section>
 
         <Section title="Task statuses" desc="Map checkbox symbols to a type, like the Obsidian Tasks plugin. The type decides whether a task counts as open, in-progress, done, or cancelled.">
+          <button onClick={importFromTasks} className="mb-3 rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>
+            ↓ Import from Obsidian Tasks plugin
+          </button>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-[0.7rem] font-medium uppercase tracking-wide" style={{ color: "var(--color-text-3)" }}>
               <span className="w-14 text-center">Symbol</span>

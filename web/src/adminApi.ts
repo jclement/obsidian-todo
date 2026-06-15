@@ -53,8 +53,10 @@ export const admin = {
   syncAction: (action: "start" | "stop") => req<SyncStatus>("POST", `/sync/${action}`),
   syncAccount: () => req<{ installed: boolean; configured: boolean }>("GET", "/sync/account"),
   syncLogin: (email: string, password: string, mfa?: string) => req<{ ok: true; vaults: string }>("POST", "/sync/login", { email, password, mfa }),
-  syncLink: (vault: string, password?: string, deviceName?: string) => req<{ ok: true }>("POST", "/sync/link", { vault, password, deviceName }),
+  syncLink: (args: { vault: string; password?: string; deviceName?: string; configs?: string; fileTypes?: string }) =>
+    req<{ ok: true }>("POST", "/sync/link", args),
   syncUnlink: () => req<{ ok: true }>("POST", "/sync/unlink"),
+  tasksConfig: () => req<{ available: boolean; globalFilter?: string; statuses?: { symbol: string; name: string; type: string }[] }>("GET", "/tasks-config"),
 
   guidance: () => req<{ guidance: string }>("GET", "/guidance").then((r) => r.guidance),
   saveGuidance: (guidance: string) => req<{ guidance: string }>("PUT", "/guidance", { guidance }).then((r) => r.guidance),
