@@ -83,8 +83,9 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
         <input className={field} style={inputStyle} type="password" placeholder="Encryption password (end-to-end encrypted vaults only)" value={encPassword} onChange={(e) => setEncPassword(e.target.value)} />
         <input className={field} style={inputStyle} placeholder="Device name" value={device} onChange={(e) => setDevice(e.target.value)} />
         <label className="block text-xs" style={{ color: "var(--color-text-3)" }}>
-          Obsidian config to sync — runs <code>ob sync-config --configs</code> after linking, so the app can read your
-          Tasks-plugin settings. Blank to skip. (Config sync is bidirectional.)
+          Obsidian config to sync — runs <code>ob sync-config</code> after linking so the app can read your Tasks-plugin
+          settings. Blank to skip. (Config sync is bidirectional. Attachments — images/PDFs — are never synced; a todo
+          doesn't need them.)
           <input className={field + " mt-1"} style={inputStyle} value={configs} onChange={(e) => setConfigs(e.target.value)} placeholder="blank to skip" />
         </label>
         <p className="text-xs" style={{ color: "var(--color-amber)" }}>

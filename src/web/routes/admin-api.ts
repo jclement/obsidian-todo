@@ -182,13 +182,12 @@ export function adminApiRouter() {
     if (!r.ok) return c.json({ error: `Connect failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
     setSetting(db, "sync_configured", "1");
     recordAdmin(db, "sync.configure", { target: String(vault) });
-    // Pull Obsidian config (Tasks plugin data.json, etc.) — a SEPARATE `ob
-    // sync-config` command, before the daemon starts. Non-fatal.
+    // Configure what syncs — a SEPARATE `ob sync-config` command, before the
+    // daemon starts. Pull Obsidian config (Tasks plugin data.json, etc.) and
+    // ALWAYS clear attachment syncing (a todo never needs images/PDFs). Non-fatal.
     const cfg = typeof configs === "string" ? configs.trim() : ALL_SYNC_CONFIGS;
-    if (cfg) {
-      const cr = await obSyncConfig(config, cfg);
-      if (!cr.ok) recordAdmin(db, "sync.config", { status: "error", detail: (cr.stderr || cr.stdout).trim().slice(0, 200) });
-    }
+    const cr = await obSyncConfig(config, cfg, "");
+    if (!cr.ok) recordAdmin(db, "sync.config", { status: "error", detail: (cr.stderr || cr.stdout).trim().slice(0, 200) });
     sync?.start();
     return c.json({ ok: true });
   });

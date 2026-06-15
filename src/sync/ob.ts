@@ -95,8 +95,10 @@ export const ALL_SYNC_CONFIGS =
  * on sync-setup or the `sync` daemon. Run against the existing link in place
  * (no re-download); the daemon should be stopped first (ob holds a per-vault lock).
  */
-export async function obSyncConfig(config: Config, configs: string = ALL_SYNC_CONFIGS): Promise<ObResult> {
-  return runOb(config, ["sync-config", "--path", config.vaultDir, "--configs", configs]);
+export async function obSyncConfig(config: Config, configs: string = ALL_SYNC_CONFIGS, fileTypes = ""): Promise<ObResult> {
+  // --file-types "" clears attachment syncing — a task manager never needs
+  // images/audio/video/PDFs, so we keep the synced vault lean by default.
+  return runOb(config, ["sync-config", "--path", config.vaultDir, "--configs", configs, "--file-types", fileTypes]);
 }
 
 export async function obSyncStatus(config: Config): Promise<ObResult> {
