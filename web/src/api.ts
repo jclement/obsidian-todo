@@ -64,6 +64,8 @@ export const api = {
   uncomplete: (t: Task) => req<{ tasks: Task[] }>("POST", "/tasks/uncomplete", loc(t)).then((r) => r.tasks),
   cancel: (t: Task) => req<{ tasks: Task[] }>("POST", "/tasks/cancel", loc(t)).then((r) => r.tasks),
   remove: (t: Task) => req<{ ok: true }>("DELETE", "/tasks", loc(t)),
+  toggleSubitem: (t: Task, subLine: number) => req<{ ok: true }>("POST", "/tasks/subitem", { path: t.path, line: subLine, expected_hash: t.file_hash }),
+  updateNotes: (t: Task, notes: string) => req<{ task: Task | null }>("PATCH", "/tasks/notes", { ...loc(t), description: t.description, notes }).then((r) => r.task),
 
   settings: () => req<Settings>("GET", "/settings"),
   saveSettings: (patch: Partial<Settings> & { openaiKey?: string; ntfyToken?: string }) =>

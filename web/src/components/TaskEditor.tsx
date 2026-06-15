@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import type { Priority, Task, TaskStatus } from "../types";
-import { useCancel, useComplete, useRemove, useUpdate } from "../queries";
+import type { Priority, StatusDef, SubItem, Task } from "../types";
+import { useBootstrap, useCancel, useComplete, useRemove, useUpdate } from "../queries";
+import { api } from "../api";
 import { useOpenInObsidian } from "../lib/obsidian";
+
+const FALLBACK_STATUSES: StatusDef[] = [
+  { symbol: " ", name: "To do", type: "TODO" },
+  { symbol: "/", name: "In progress", type: "IN_PROGRESS" },
+  { symbol: "x", name: "Done", type: "DONE" },
+  { symbol: "-", name: "Cancelled", type: "CANCELLED" },
+];
 
 const PRIORITIES: { value: Priority; label: string }[] = [
   { value: "highest", label: "Highest" },
@@ -36,36 +44,51 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const cancel = useCancel();
   const remove = useRemove();
   const openInObsidian = useOpenInObsidian();
+  const boot = useBootstrap();
+  const statuses = boot.data?.settings.statuses?.length ? boot.data.settings.statuses : FALLBACK_STATUSES;
 
   const [desc, setDesc] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("todo");
+  const [statusChar, setStatusChar] = useState(" ");
   const [priority, setPriority] = useState<Priority>("normal");
   const [due, setDue] = useState("");
   const [scheduled, setScheduled] = useState("");
   const [recurrence, setRecurrence] = useState("");
   const [reminder, setReminder] = useState("");
+  const [notes, setNotes] = useState("");
+  const [notesDirty, setNotesDirty] = useState(false);
+  const [subitems, setSubitems] = useState<SubItem[]>([]);
 
   useEffect(() => {
     if (!task) return;
     setDesc(task.description);
-    setStatus(task.status);
+    setStatusChar(task.status_char || " ");
     setPriority(task.priority);
     setDue(task.due ?? "");
     setScheduled(task.scheduled ?? "");
     setRecurrence(task.recurrence ?? "");
     setReminder(task.reminder ?? "");
+    setNotes(task.notes ?? "");
+    setNotesDirty(false);
+    setSubitems(task.subitems ?? []);
   }, [task]);
 
   if (!task) return null;
+  const t = task;
 
   const save = () => {
     update.mutate({
-      task,
-      changes: { description: desc, status, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
+      task: t,
+      changes: { description: desc, status_char: statusChar, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
     });
+    if (notesDirty) void api.updateNotes(t, notes); // WS broadcast refreshes lists
     onClose();
   };
   const act = (fn: () => void) => { fn(); onClose(); };
+
+  const toggleSub = (sub: SubItem) => {
+    setSubitems((cur) => cur.map((s) => (s.line === sub.line ? { ...s, checked: !s.checked } : s)));
+    void api.toggleSubitem(t, sub.line).catch(() => setSubitems((cur) => cur.map((s) => (s.line === sub.line ? { ...s, checked: sub.checked } : s))));
+  };
 
   return (
     <Dialog.Root open={!!task} onOpenChange={(o) => !o && onClose()}>
@@ -95,12 +118,11 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
             <Field label="Due"><input type="date" {...noFill} value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
             <Field label="Scheduled"><input type="date" {...noFill} value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
             <Field label="Status">
-              <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className={field} style={fieldStyle}>
-                <option value="todo">To do</option>
-                <option value="in_progress">In progress</option>
-                <option value="done">Done</option>
-                <option value="cancelled">Cancelled</option>
-                {task.status === "other" && <option value="other">Custom [{task.status_char}]</option>}
+              <select value={statusChar} onChange={(e) => setStatusChar(e.target.value)} className={field} style={fieldStyle}>
+                {statuses.map((s, i) => (
+                  <option key={`${s.symbol}-${i}`} value={s.symbol}>{s.name} [{s.symbol === " " ? "·" : s.symbol}]</option>
+                ))}
+                {!statuses.some((s) => s.symbol === statusChar) && <option value={statusChar}>Custom [{statusChar}]</option>}
               </select>
             </Field>
             <Field label="Priority">
@@ -114,6 +136,31 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
                 <input {...noFill} value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={field} style={fieldStyle} placeholder="every week · every 3 days when done" />
               </Field>
             </div>
+          </div>
+
+          {/* Notes & sub-checklist */}
+          <div className="px-5 pt-3">
+            <span className={lbl} style={lblStyle}>Notes & sub-tasks</span>
+            {subitems.length > 0 && (
+              <div className="mb-2 space-y-1">
+                {subitems.map((s) => (
+                  <label key={s.line} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={s.checked} onChange={() => toggleSub(s)} />
+                    <span className={s.checked ? "line-through" : ""} style={s.checked ? { color: "var(--color-text-3)" } : undefined}>{s.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <textarea
+              {...noFill}
+              value={notes}
+              onChange={(e) => { setNotes(e.target.value); setNotesDirty(true); }}
+              rows={3}
+              placeholder={"Indented notes / checklist under this task, e.g.\n- [ ] Apples\n- [ ] Oranges"}
+              className={field + " resize-y font-mono text-xs"}
+              style={fieldStyle}
+            />
+            {subitems.length > 0 && <p className="mt-1 text-[0.7rem]" style={{ color: "var(--color-text-3)" }}>Tick boxes above to toggle instantly; edit the text to restructure (saved on Save).</p>}
           </div>
 
           {/* Quick actions */}

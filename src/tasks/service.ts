@@ -15,7 +15,7 @@ import type { VaultStore } from "../vault/store.ts";
 import { VaultError } from "../vault/store.ts";
 import type { Snapshotter } from "../snapshots/snapshotter.ts";
 import type { Indexer } from "../index/indexer.ts";
-import type { AppSettings } from "../settings.ts";
+import { classifyStatus, type AppSettings, type StatusType } from "../settings.ts";
 import { getTaskAt, tasksInFile } from "../index/queries.ts";
 import type { TaskDTO } from "./dto.ts";
 import { parseTaskLine, hasGlobalFilter } from "./parse.ts";
@@ -45,6 +45,8 @@ export class TaskNotFoundError extends Error {
 export interface TaskChanges {
   description?: string;
   status?: TaskStatus;
+  /** Explicit checkbox symbol (e.g. 'W', '!') — takes precedence over status. */
+  statusChar?: string;
   priority?: Priority;
   due?: string | null;
   scheduled?: string | null;
@@ -89,6 +91,17 @@ export class TaskService {
 
   private gf() {
     return this.getSettings().globalFilter;
+  }
+
+  /** The configured checkbox symbol for a status type (with sane fallbacks). */
+  private symbolForType(type: StatusType): string {
+    const fallback: Record<StatusType, string> = { TODO: " ", DONE: "x", IN_PROGRESS: "/", CANCELLED: "-", NON_TASK: " " };
+    return this.getSettings().statuses.find((s) => s.type === type)?.symbol ?? fallback[type];
+  }
+
+  private symbolForEnum(status: TaskStatus): string {
+    const map: Record<TaskStatus, StatusType> = { todo: "TODO", done: "DONE", in_progress: "IN_PROGRESS", cancelled: "CANCELLED", other: "TODO" };
+    return this.symbolForType(map[status]);
   }
 
   /** Locate the target line, relocating by description if it shifted (MCP). */
@@ -169,6 +182,9 @@ export class TaskService {
   async setStatus(loc: Locator, status: TaskStatus): Promise<TaskDTO[]> {
     return this.edit(loc, (task) => {
       task.status = status;
+      task.statusChar = this.symbolForEnum(status);
+      if (status !== "done") task.done = undefined;
+      if (status !== "cancelled") task.cancelled = undefined;
       return [formatTaskLine(task, this.gf())];
     });
   }
@@ -178,6 +194,7 @@ export class TaskService {
     return this.edit(loc, (task, gf) => {
       const next = nextOccurrence(task, today);
       task.status = "done";
+      task.statusChar = this.symbolForType("DONE");
       task.done = today;
       const completedLine = formatTaskLine(task, gf);
       if (!next) return [completedLine];
@@ -187,7 +204,7 @@ export class TaskService {
         ...task,
         raw: "",
         status: "todo",
-        statusChar: " ",
+        statusChar: this.symbolForType("TODO"),
         done: undefined,
         cancelled: undefined,
         created: undefined,
@@ -205,6 +222,7 @@ export class TaskService {
     const today = todayYmd(this.now());
     return this.edit(loc, (task, gf) => {
       task.status = "cancelled";
+      task.statusChar = this.symbolForType("CANCELLED");
       task.cancelled = today;
       return [formatTaskLine(task, gf)];
     });
@@ -220,7 +238,16 @@ export class TaskService {
         task.descriptionRaw = ensureGlobalFilter(changes.description, gf);
       }
       if (changes.tags !== undefined) setTags(task, changes.tags, gf);
-      if (changes.status !== undefined) task.status = changes.status;
+      if (changes.statusChar !== undefined) {
+        task.statusChar = changes.statusChar.slice(0, 1) || " ";
+        task.status = classifyStatus(task.statusChar, this.getSettings().statuses);
+        const today = todayYmd(this.now());
+        if (task.status === "done" && !task.done) task.done = today;
+        if (task.status === "cancelled" && !task.cancelled) task.cancelled = today;
+      } else if (changes.status !== undefined) {
+        task.status = changes.status;
+        task.statusChar = this.symbolForEnum(changes.status);
+      }
       if (changes.priority !== undefined) task.priority = changes.priority;
       if (changes.due !== undefined) task.due = changes.due ?? undefined;
       if (changes.scheduled !== undefined) task.scheduled = changes.scheduled ?? undefined;
@@ -233,6 +260,74 @@ export class TaskService {
 
   async remove(loc: Locator): Promise<void> {
     await this.edit(loc, () => []); // delete the line; reindex handles the shift
+  }
+
+  /** Read → verify hash → mutate the whole line array → write → reindex. */
+  private async editFile(loc: Locator, mutate: (lines: string[]) => void): Promise<void> {
+    let file;
+    try {
+      file = await this.store.readText(loc.path);
+    } catch {
+      throw new TaskNotFoundError(`Note not found: ${loc.path}`);
+    }
+    if (loc.expectedHash && loc.expectedHash !== file.hash) {
+      throw new TaskConflictError(loc.path, tasksInFile(this.db, loc.path), `${loc.path} changed since you read it.`);
+    }
+    const trailingNewline = file.text.endsWith("\n");
+    const lines = file.text.split("\n");
+    if (trailingNewline) lines.pop();
+    mutate(lines);
+    const newText = lines.join("\n") + (trailingNewline ? "\n" : "");
+    try {
+      await this.store.write(loc.path, newText, { expectedHash: file.hash });
+    } catch (err) {
+      if (err instanceof VaultError && err.code === "STALE_NOTE") {
+        this.indexer.reindexAndBroadcast(loc.path);
+        throw new TaskConflictError(loc.path, tasksInFile(this.db, loc.path), err.message);
+      }
+      throw err;
+    }
+    this.snapshotter.noteMutation(`task: edit ${loc.path}`);
+    this.indexer.reindexAndBroadcast(loc.path);
+  }
+
+  /** Toggle a sub-checklist line (a note line under a task) between [ ] and [x]. */
+  async toggleSubitem(path: string, line: number, expectedHash?: string): Promise<void> {
+    await this.editFile({ path, line, expectedHash }, (lines) => {
+      const m = /^(\s*(?:[-*+]|\d+[.)])\s+\[)(.)(\].*)$/.exec(lines[line - 1] ?? "");
+      if (!m) throw new TaskNotFoundError(`No checklist item at ${path}:${line}`);
+      const next = m[2] === " " || m[2] === "" ? "x" : " ";
+      lines[line - 1] = m[1] + next + m[3];
+    });
+  }
+
+  /** Replace a task's note block (the indented non-task lines beneath it). */
+  async updateNotes(loc: Locator, notesText: string): Promise<TaskDTO | null> {
+    const gf = this.gf();
+    const width = (s: string) => (s.match(/^[ \t]*/)?.[0] ?? "").replace(/\t/g, "    ").length;
+    await this.editFile(loc, (lines) => {
+      const { idx, task } = this.locate(lines, loc);
+      let end = idx + 1;
+      while (end < lines.length) {
+        const l = lines[end]!;
+        if (l.trim() === "") {
+          const nextNonBlank = lines.slice(end + 1).find((x) => x.trim() !== "");
+          if (nextNonBlank && width(nextNonBlank) > task.indent && !hasGlobalFilter(nextNonBlank, gf)) {
+            end++;
+            continue;
+          }
+          break;
+        }
+        if (width(l) <= task.indent) break;
+        if (hasGlobalFilter(l, gf)) break; // nested managed task: leave it
+        end++;
+      }
+      const base = task.indentText + "    ";
+      const trimmed = notesText.replace(/\n+$/, "");
+      const noteLines = trimmed.trim() === "" ? [] : trimmed.split("\n").map((l) => (l.trim() === "" ? "" : base + l));
+      lines.splice(idx + 1, end - (idx + 1), ...noteLines);
+    });
+    return getTaskAt(this.db, loc.path, loc.line);
   }
 
   /** Append a new task to the target note (default: configured Inbox). */

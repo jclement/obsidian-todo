@@ -1,4 +1,4 @@
-import type { Priority, TaskStatus } from "./types.ts";
+import type { Priority, SubItem, TaskStatus } from "./types.ts";
 
 /** The wire shape returned to clients and MCP. */
 export interface TaskDTO {
@@ -26,6 +26,8 @@ export interface TaskDTO {
   source_note: string;
   indent: number;
   parent_line: number | null;
+  notes: string;
+  subitems: SubItem[];
 }
 
 /** Row as stored in the `tasks` table (joined with files.hash). */
@@ -52,6 +54,8 @@ export interface TaskRow {
   source_note: string;
   indent: number;
   parent_line: number | null;
+  notes: string;
+  subitems: string;
 }
 
 export function rowToDTO(r: TaskRow): TaskDTO {
@@ -78,6 +82,8 @@ export function rowToDTO(r: TaskRow): TaskDTO {
     source_note: r.source_note,
     indent: r.indent,
     parent_line: r.parent_line,
+    notes: r.notes ?? "",
+    subitems: safeSubitems(r.subitems),
   };
 }
 
@@ -85,6 +91,15 @@ function safeJsonArray(s: string): string[] {
   try {
     const a = JSON.parse(s);
     return Array.isArray(a) ? a.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function safeSubitems(s: string): SubItem[] {
+  try {
+    const a = JSON.parse(s);
+    return Array.isArray(a) ? (a as SubItem[]) : [];
   } catch {
     return [];
   }

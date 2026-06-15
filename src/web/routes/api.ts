@@ -134,6 +134,18 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
     return c.json({ ok: true });
   });
 
+  app.post("/tasks/subitem", async (c) => {
+    const body = await c.req.json();
+    await ctx.service.toggleSubitem(String(body.path), Number(body.line), typeof body.expected_hash === "string" ? body.expected_hash : undefined);
+    return c.json({ ok: true });
+  });
+
+  app.patch("/tasks/notes", async (c) => {
+    const body = await c.req.json();
+    const task = await ctx.service.updateNotes(locator(body), String(body.notes ?? ""));
+    return c.json({ task });
+  });
+
   app.post("/reindex", async (c) => {
     const body = await c.req.json().catch(() => ({}));
     if (body?.path) ctx.indexer.reindexAndBroadcast(body.path);
@@ -216,6 +228,7 @@ function locator(body: Record<string, unknown>) {
 function sanitizeChanges(body: Record<string, unknown>): TaskChanges {
   const c: TaskChanges = {};
   if (typeof body.description === "string") c.description = body.description;
+  if (typeof body.status_char === "string" && body.status_char.length >= 1) c.statusChar = body.status_char;
   if (typeof body.priority === "string" && PRIORITIES.includes(body.priority as Priority)) c.priority = body.priority as Priority;
   if (typeof body.status === "string" && STATUSES.includes(body.status as TaskStatus)) c.status = body.status as TaskStatus;
   for (const k of ["due", "scheduled", "start", "recurrence", "reminder"] as const) {

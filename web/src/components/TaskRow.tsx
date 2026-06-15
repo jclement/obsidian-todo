@@ -114,6 +114,10 @@ export function TaskRow({
             )}
             {task.recurrence && <span title={task.recurrence}>🔁</span>}
             {task.reminder && <span>⏰ {task.reminder}</span>}
+            {task.subitems.length > 0 && (
+              <span title="Sub-checklist">☑ {task.subitems.filter((s) => s.checked).length}/{task.subitems.length}</span>
+            )}
+            {task.subitems.length === 0 && task.notes && <span title="Has notes">🗒</span>}
             {tags.map((t) => (
               <Link key={t} to={`/tag/${encodeURIComponent(t)}`} className="hover:text-[var(--color-accent-2)]" onClick={(e) => e.stopPropagation()}>
                 #{t}

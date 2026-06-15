@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSettings, useSaveSettings } from "../queries";
 import { getThemePref, setThemePref, type ThemePref } from "../theme";
+import type { StatusDef, StatusType } from "../types";
+
+const STATUS_TYPES: StatusType[] = ["TODO", "IN_PROGRESS", "DONE", "CANCELLED", "NON_TASK"];
 
 const field = "w-full rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]";
 const label = "mb-1 block text-xs font-medium";
@@ -36,6 +39,7 @@ export function SettingsView() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [ntfyToken, setNtfyToken] = useState("");
   const [theme, setTheme] = useState<ThemePref>(getThemePref());
+  const [statusList, setStatusList] = useState<StatusDef[]>([]);
 
   useEffect(() => {
     if (!s) return;
@@ -52,6 +56,7 @@ export function SettingsView() {
       notifyEnabled: s.notifyEnabled,
       notifyHour: s.notifyHour,
     });
+    setStatusList(s.statuses ?? []);
   }, [s]);
 
   const submit = () => {
@@ -67,11 +72,15 @@ export function SettingsView() {
       ntfyTopic: form.ntfyTopic,
       notifyEnabled: form.notifyEnabled,
       notifyHour: form.notifyHour,
+      statuses: statusList.filter((x) => x.symbol),
     };
     if (openaiKey) patch.openaiKey = openaiKey;
     if (ntfyToken) patch.ntfyToken = ntfyToken;
     save.mutate(patch as any, { onSuccess: () => { setOpenaiKey(""); setNtfyToken(""); } });
   };
+
+  const updateStatus = (i: number, patch: Partial<StatusDef>) =>
+    setStatusList((cur) => cur.map((st, j) => (j === i ? { ...st, ...patch } : st)));
 
   if (!s) return <div />;
 
@@ -122,6 +131,28 @@ export function SettingsView() {
             <label className={label}>Obsidian vault name</label>
             <input className={field} value={form.obsidianVaultName} onChange={(e) => setForm({ ...form, obsidianVaultName: e.target.value })} placeholder="(your vault's name in Obsidian)" />
             <p className={hint} style={{ color: "var(--color-text-3)" }}>Used for “Open in Obsidian” links. Must match the vault name shown in the Obsidian app. Defaults to the vault folder name.</p>
+          </div>
+        </Section>
+
+        <Section title="Task statuses" desc="Map checkbox symbols to a type, like the Obsidian Tasks plugin. The type decides whether a task counts as open, in-progress, done, or cancelled.">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[0.7rem] font-medium uppercase tracking-wide" style={{ color: "var(--color-text-3)" }}>
+              <span className="w-14 text-center">Symbol</span>
+              <span className="flex-1">Name</span>
+              <span className="w-40">Type</span>
+              <span className="w-6" />
+            </div>
+            {statusList.map((st, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input className={field + " w-14 text-center font-mono"} maxLength={1} value={st.symbol === " " ? "" : st.symbol} placeholder="space" onChange={(e) => updateStatus(i, { symbol: e.target.value || " " })} />
+                <input className={field + " flex-1"} value={st.name} onChange={(e) => updateStatus(i, { name: e.target.value })} placeholder="Name" />
+                <select className={field + " w-40"} value={st.type} onChange={(e) => updateStatus(i, { type: e.target.value as StatusType })}>
+                  {STATUS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <button onClick={() => setStatusList(statusList.filter((_, j) => j !== i))} className="w-6 text-center" style={{ color: "var(--color-red)" }} title="Remove">✕</button>
+              </div>
+            ))}
+            <button onClick={() => setStatusList([...statusList, { symbol: "", name: "", type: "TODO" }])} className="text-sm" style={{ color: "var(--color-accent-2)" }}>+ Add status</button>
           </div>
         </Section>
 

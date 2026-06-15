@@ -38,11 +38,18 @@ describe("formatTaskLine round-trips", () => {
     expect(formatTaskLine(parsed)).toBe("- [ ] #task a ⏫ ➕ 2026-01-01 📅 2026-05-01");
   });
 
-  test("flipping status to done writes x", () => {
+  test("flipping status to done writes the status char", () => {
     const parsed = parseTaskLine("- [ ] #task a 📅 2026-05-01")!;
     parsed.status = "done";
+    parsed.statusChar = "x";
     parsed.done = "2026-06-13";
     expect(formatTaskLine(parsed)).toBe("- [x] #task a 📅 2026-05-01 ✅ 2026-06-13");
+  });
+
+  test("custom status chars round-trip faithfully", () => {
+    for (const line of ["- [!] #task important", "- [W] #task waiting", "- [X] #task checked"]) {
+      expect(formatTaskLine(parseTaskLine(line)!)).toBe(line);
+    }
   });
 
   test("preserves block ref", () => {

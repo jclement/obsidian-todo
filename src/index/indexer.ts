@@ -83,7 +83,7 @@ export class Indexer {
       .get(path);
     if (existing?.hash === hash) return false; // no-op: filters watcher noise + our echoes
 
-    const tasks = parseTasksInFile(text, settings.globalFilter);
+    const tasks = parseTasksInFile(text, settings.globalFilter, settings.statuses);
     const sourceNote = basenameNoExt(path);
 
     this.db.transaction(() => {
@@ -92,8 +92,8 @@ export class Indexer {
         .query("INSERT INTO files (path, hash, indexed_at) VALUES (?, ?, unixepoch()) ON CONFLICT(path) DO UPDATE SET hash = excluded.hash, indexed_at = excluded.indexed_at")
         .run(path, hash);
       const insert = this.db.query(
-        `INSERT INTO tasks (path, line, raw, status, description, priority, due, scheduled, start, created, done, cancelled, recurrence, reminder, tags, task_id, depends_on, source_note, indent, parent_line)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO tasks (path, line, raw, status, description, priority, due, scheduled, start, created, done, cancelled, recurrence, reminder, tags, task_id, depends_on, source_note, indent, parent_line, notes, subitems)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       );
       for (const t of tasks) {
         insert.run(
@@ -117,6 +117,8 @@ export class Indexer {
           sourceNote,
           t.indent,
           t.parentLine,
+          t.notes,
+          JSON.stringify(t.subitems),
         );
       }
     })();

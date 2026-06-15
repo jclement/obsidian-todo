@@ -62,10 +62,22 @@ export interface ParsedTask {
   blockRef?: string;
 }
 
+/** A sub-checklist item nested under a task (not itself a managed task). */
+export interface SubItem {
+  /** 1-based line number in the file. */
+  line: number;
+  checked: boolean;
+  text: string;
+}
+
 /** A task located in a file. */
 export interface LocatedTask extends ParsedTask {
   /** 1-based line number in the file. */
   line: number;
   /** 0-based parent line for subtasks (nearest less-indented task), or null. */
   parentLine: number | null;
+  /** Indented free-text/checklist lines under the task (dedented), or "". */
+  notes: string;
+  /** Toggleable sub-checklist items found in the notes. */
+  subitems: SubItem[];
 }

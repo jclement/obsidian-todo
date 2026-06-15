@@ -1,5 +1,8 @@
 export type TaskStatus = "todo" | "done" | "in_progress" | "cancelled" | "other";
 export type Priority = "highest" | "high" | "medium" | "normal" | "low" | "lowest";
+export type StatusType = "TODO" | "DONE" | "IN_PROGRESS" | "CANCELLED" | "NON_TASK";
+export interface StatusDef { symbol: string; name: string; type: StatusType }
+export interface SubItem { line: number; checked: boolean; text: string }
 
 export interface Task {
   id: number;
@@ -24,6 +27,8 @@ export interface Task {
   source_note: string;
   indent: number;
   parent_line: number | null;
+  notes: string;
+  subitems: SubItem[];
 }
 
 export interface Project {
@@ -61,6 +66,7 @@ export interface Settings {
   openaiModel: string;
   notifyHour: number;
   notifyEnabled: boolean;
+  statuses: StatusDef[];
   syncMode: "obsidian" | "external" | "none";
   onboarded: boolean;
 }

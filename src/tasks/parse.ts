@@ -13,6 +13,7 @@
  */
 
 import type { DateField, ParsedTask, Priority } from "./types.ts";
+import { classifyStatus, type StatusDef } from "../settings.ts";
 
 export const DEFAULT_GLOBAL_FILTER = "#task";
 
@@ -106,7 +107,7 @@ function stripGlobalFilter(text: string, globalFilter: string): string {
  * lines are managed) is applied by the indexer, not here, so callers can still
  * inspect untagged checklist items if they want.
  */
-export function parseTaskLine(raw: string, globalFilter = DEFAULT_GLOBAL_FILTER): ParsedTask | null {
+export function parseTaskLine(raw: string, globalFilter = DEFAULT_GLOBAL_FILTER, statuses?: StatusDef[]): ParsedTask | null {
   const m = CHECKBOX.exec(raw);
   if (!m) return null;
   const [, indentText, listMarker, statusChar, restRaw] = m as unknown as [string, string, string, string, string];
@@ -135,7 +136,7 @@ export function parseTaskLine(raw: string, globalFilter = DEFAULT_GLOBAL_FILTER)
     indent: indentText.replace(/\t/g, "    ").length,
     listMarker,
     statusChar,
-    status: statusFromChar(statusChar),
+    status: statuses ? classifyStatus(statusChar, statuses) : statusFromChar(statusChar),
     descriptionRaw: "",
     description: "",
     tags: [],

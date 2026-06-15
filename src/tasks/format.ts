@@ -24,14 +24,6 @@ const PRIORITY_GLYPH: Record<Priority, string> = {
   lowest: "⏬",
 };
 
-const STATUS_CHAR: Record<TaskStatus, string> = {
-  todo: " ",
-  done: "x",
-  in_progress: "/",
-  cancelled: "-",
-  other: " ",
-};
-
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -50,7 +42,9 @@ export function ensureGlobalFilter(description: string, globalFilter = DEFAULT_G
  * status is "other" we preserve the original `statusChar`.
  */
 export function formatTaskLine(task: ParsedTask, globalFilter = DEFAULT_GLOBAL_FILTER): string {
-  const statusChar = task.status === "other" ? task.statusChar : STATUS_CHAR[task.status];
+  // Write the exact status char — callers set it for status changes, so custom
+  // statuses ([!], [W], [X], …) round-trip faithfully.
+  const statusChar = task.statusChar || " ";
   const desc = ensureGlobalFilter(task.descriptionRaw, globalFilter);
 
   const parts: string[] = [desc];

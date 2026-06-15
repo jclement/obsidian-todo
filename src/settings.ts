@@ -6,6 +6,43 @@
 
 import type { Database } from "bun:sqlite";
 import { getSetting, setSetting } from "./db/index.ts";
+import type { TaskStatus } from "./tasks/types.ts";
+
+export type StatusType = "TODO" | "DONE" | "IN_PROGRESS" | "CANCELLED" | "NON_TASK";
+
+/** A custom checkbox status, à la the Obsidian Tasks plugin. */
+export interface StatusDef {
+  symbol: string; // the single char inside [ ]
+  name: string;
+  type: StatusType;
+}
+
+export const DEFAULT_STATUSES: StatusDef[] = [
+  { symbol: " ", name: "Unchecked", type: "TODO" },
+  { symbol: "x", name: "Checked", type: "DONE" },
+  { symbol: "X", name: "Checked", type: "DONE" },
+  { symbol: "/", name: "In progress", type: "IN_PROGRESS" },
+  { symbol: "-", name: "Dropped", type: "CANCELLED" },
+  { symbol: "!", name: "Important", type: "TODO" },
+  { symbol: "?", name: "Question", type: "TODO" },
+  { symbol: "W", name: "Waiting", type: "IN_PROGRESS" },
+];
+
+const STATUS_TYPE_TO_ENUM: Record<StatusType, TaskStatus> = {
+  TODO: "todo",
+  DONE: "done",
+  IN_PROGRESS: "in_progress",
+  CANCELLED: "cancelled",
+  NON_TASK: "other",
+};
+
+/** Classify a raw checkbox char into our status enum using the configured set. */
+export function classifyStatus(char: string, statuses: StatusDef[]): TaskStatus {
+  const def = statuses.find((s) => s.symbol === char);
+  if (def) return STATUS_TYPE_TO_ENUM[def.type];
+  // Unknown custom char: treat as actionable (open), preserving the char.
+  return "other";
+}
 
 export interface AppSettings {
   /** Global-filter tag that gates managed tasks. */
@@ -34,6 +71,8 @@ export interface AppSettings {
   notifyHour: number;
   /** Whether the notification scheduler is active. */
   notifyEnabled: boolean;
+  /** Custom checkbox statuses (symbol → name/type). */
+  statuses: StatusDef[];
   /** How the vault is kept in sync — drives whether we warn when `ob` is down. */
   syncMode: "obsidian" | "external" | "none";
   /** Whether the first-run wizard has been completed. */
@@ -54,6 +93,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   openaiModel: "gpt-4o-mini",
   notifyHour: 8,
   notifyEnabled: false,
+  statuses: DEFAULT_STATUSES,
   syncMode: "external",
   onboarded: false,
 };
@@ -73,6 +113,7 @@ const KEY = {
   openaiModel: "openai_model",
   notifyHour: "notify_hour",
   notifyEnabled: "notify_enabled",
+  statuses: "statuses",
   syncMode: "sync_mode",
   onboarded: "onboarded",
 } as const;
@@ -113,6 +154,17 @@ export function loadSettings(db: Database): AppSettings {
   const hour = getSetting(db, KEY.notifyHour);
   if (hour !== null) s.notifyHour = Math.min(23, Math.max(0, parseInt(hour, 10) || 0));
   s.notifyEnabled = getSetting(db, KEY.notifyEnabled) === "1";
+  const statusesRaw = getSetting(db, KEY.statuses);
+  if (statusesRaw) {
+    try {
+      const arr = JSON.parse(statusesRaw);
+      if (Array.isArray(arr) && arr.length) {
+        s.statuses = arr
+          .filter((x) => x && typeof x.symbol === "string" && x.symbol.length >= 1)
+          .map((x) => ({ symbol: String(x.symbol)[0]!, name: String(x.name ?? ""), type: x.type as StatusType }));
+      }
+    } catch {}
+  }
   const mode = getSetting(db, KEY.syncMode);
   if (mode === "obsidian" || mode === "external" || mode === "none") s.syncMode = mode;
   s.onboarded = getSetting(db, KEY.onboarded) === "1";
@@ -150,6 +202,13 @@ export function saveSettings(db: Database, patch: Partial<AppSettings>): AppSett
   if (patch.openaiModel !== undefined) setSetting(db, KEY.openaiModel, patch.openaiModel.trim() || "gpt-4o-mini");
   if (patch.notifyHour !== undefined) setSetting(db, KEY.notifyHour, String(Math.min(23, Math.max(0, patch.notifyHour))));
   if (patch.notifyEnabled !== undefined) setSetting(db, KEY.notifyEnabled, patch.notifyEnabled ? "1" : "0");
+  if (patch.statuses !== undefined) {
+    const valid: StatusType[] = ["TODO", "DONE", "IN_PROGRESS", "CANCELLED", "NON_TASK"];
+    const clean = patch.statuses
+      .filter((x) => x && typeof x.symbol === "string" && x.symbol.length >= 1 && valid.includes(x.type))
+      .map((x) => ({ symbol: x.symbol[0]!, name: x.name?.trim() || x.symbol[0]!, type: x.type }));
+    if (clean.length) setSetting(db, KEY.statuses, JSON.stringify(clean));
+  }
   if (patch.syncMode !== undefined) setSetting(db, KEY.syncMode, patch.syncMode);
   if (patch.onboarded !== undefined) setSetting(db, KEY.onboarded, patch.onboarded ? "1" : "0");
   return loadSettings(db);
@@ -175,6 +234,7 @@ export function publicSettings(s: AppSettings) {
     openaiModel: s.openaiModel,
     notifyHour: s.notifyHour,
     notifyEnabled: s.notifyEnabled,
+    statuses: s.statuses,
     syncMode: s.syncMode,
     onboarded: s.onboarded,
   };

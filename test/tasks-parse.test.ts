@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { hasGlobalFilter, parseTaskLine } from "../src/tasks/parse.ts";
 import { parseTasksInFile } from "../src/tasks/file.ts";
+import type { StatusDef } from "../src/settings.ts";
 
 describe("parseTaskLine", () => {
   test("returns null for non-checkbox lines", () => {
@@ -128,6 +129,21 @@ describe("parseTaskLine", () => {
     expect(parseTaskLine("2) [ ] #task a")!.listMarker).toBe("2)");
   });
 
+  test("classifies status via configured statuses", () => {
+    const statuses: StatusDef[] = [
+      { symbol: " ", name: "Unchecked", type: "TODO" },
+      { symbol: "x", name: "Checked", type: "DONE" },
+      { symbol: "-", name: "Dropped", type: "CANCELLED" },
+      { symbol: "!", name: "Important", type: "TODO" },
+      { symbol: "W", name: "Waiting", type: "IN_PROGRESS" },
+    ];
+    expect(parseTaskLine("- [!] #task a", "#task", statuses)!.status).toBe("todo");
+    expect(parseTaskLine("- [W] #task a", "#task", statuses)!.status).toBe("in_progress");
+    expect(parseTaskLine("- [-] #task a", "#task", statuses)!.status).toBe("cancelled");
+    expect(parseTaskLine("- [x] #task a", "#task", statuses)!.status).toBe("done");
+    expect(parseTaskLine("- [Z] #task a", "#task", statuses)!.status).toBe("other"); // unknown → open
+  });
+
   test("custom global filter", () => {
     const t = parseTaskLine("- [ ] #todo buy milk 📅 2026-05-01", "#todo")!;
     expect(t.description).toBe("buy milk");
@@ -174,6 +190,24 @@ describe("parseTasksInFile", () => {
   test("ignores checkbox lines inside code fences", () => {
     const tasks = parseTasksInFile(doc);
     expect(tasks.some((t) => t.description.includes("code fence"))).toBe(false);
+  });
+
+  test("captures sub-bullets as notes + toggleable subitems", () => {
+    const sample = [
+      "- [ ] #task Buy groceries",
+      "    - [ ] Apples",
+      "    - [x] Oranges",
+      "    just a plain note",
+      "- [ ] #task next thing",
+    ].join("\n");
+    const tasks = parseTasksInFile(sample);
+    const g = tasks.find((t) => t.description === "Buy groceries")!;
+    expect(g.subitems.map((s) => s.text)).toEqual(["Apples", "Oranges"]);
+    expect(g.subitems[1]!.checked).toBe(true);
+    expect(g.subitems[0]!.line).toBe(2);
+    expect(g.notes).toContain("Apples");
+    expect(g.notes).toContain("just a plain note");
+    expect(tasks.find((t) => t.description === "next thing")!.notes).toBe("");
   });
 
   test("derives subtask parent from indentation", () => {
