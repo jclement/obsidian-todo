@@ -1,4 +1,4 @@
-# Obsidian MCP exposed through a Cloudflare Tunnel.
+# Obsidian Todo exposed through a Cloudflare Tunnel.
 #
 # 1. In Cloudflare Zero Trust, create a tunnel and point its public hostname
 #    (e.g. notes.example.com) at http://app:3000.
@@ -12,7 +12,7 @@
 
 services:
   app:
-    image: ghcr.io/jclement/obsidian-mcp:latest
+    image: ghcr.io/jclement/obsidian-todo:latest
     # To build from a local checkout instead of pulling the published image,
     # uncomment this and run `docker compose up --build`:
     # build: { context: .., dockerfile: Dockerfile }

@@ -1,4 +1,4 @@
-# Try Obsidian MCP locally — builds the image from source, no published image,
+# Try Obsidian Todo locally — builds the image from source, no published image,
 # no tunnel. Port 3000 is published so you reach it directly at localhost.
 #
 # From the repo root:
@@ -15,7 +15,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    image: obsidian-mcp:local
+    image: obsidian-todo:local
     restart: unless-stopped
     stop_grace_period: 30s
     ports:
