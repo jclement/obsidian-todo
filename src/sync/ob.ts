@@ -79,13 +79,9 @@ export async function obSyncSetup(
   vault: string,
   password?: string,
   deviceName = "obsidian-todo",
-  opts: { configs?: string; fileTypes?: string } = {},
 ): Promise<ObResult> {
   const args = ["sync-setup", "--vault", vault, "--path", config.vaultDir, "--device-name", deviceName];
   if (password) args.push("--password", password);
-  // Sync Obsidian config (e.g. the Tasks plugin's data.json) + attachment types.
-  if (opts.configs !== undefined) args.push("--configs", opts.configs);
-  if (opts.fileTypes !== undefined) args.push("--file-types", opts.fileTypes);
   return runOb(config, args);
 }
 

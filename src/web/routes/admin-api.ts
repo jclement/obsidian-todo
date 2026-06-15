@@ -178,10 +178,13 @@ export function adminApiRouter() {
     const { db, config, sync } = deps(c);
     const { vault, password, deviceName, configs, fileTypes } = await c.req.json();
     if (!vault) return c.json({ error: "Vault name or ID is required." }, 400);
-    const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo", {
-      configs: typeof configs === "string" ? configs : undefined,
-      fileTypes: typeof fileTypes === "string" ? fileTypes : undefined,
+    // config/attachment categories are applied to the continuous `ob sync`
+    // process (sync-setup itself doesn't accept them), persisted in settings.
+    deps(c).taskCtx.updateSettings({
+      syncConfigs: typeof configs === "string" ? configs : "",
+      syncFileTypes: typeof fileTypes === "string" ? fileTypes : "",
     });
+    const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
     if (!r.ok) return c.json({ error: `Connect failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
     setSetting(db, "sync_configured", "1");
     recordAdmin(db, "sync.configure", { target: String(vault) });

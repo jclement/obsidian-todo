@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { Config } from "../config.ts";
 import { getSetting, setSetting } from "../db/index.ts";
+import { loadSettings } from "../settings.ts";
 import { obEnv } from "./ob.ts";
 import { clearLock, reapStrayOb, writeLock } from "./lock.ts";
 import { logger } from "../log.ts";
@@ -102,9 +103,15 @@ export class SyncSupervisor {
     this.startedAt = Date.now();
     // kill any ob left over from a prior run on this vault (HMR orphan, crash)
     reapStrayOb(this.config);
+    // Optional config/attachment syncing (e.g. the Tasks plugin's data.json).
+    // Off by default so a wrong flag can never break core file sync.
+    const s = loadSettings(this.db);
+    const syncArgs = ["sync", "--path", this.config.vaultDir, "--continuous"];
+    if (s.syncConfigs) syncArgs.push("--configs", s.syncConfigs);
+    if (s.syncFileTypes) syncArgs.push("--file-types", s.syncFileTypes);
     let proc: ReturnType<typeof Bun.spawn>;
     try {
-      proc = Bun.spawn([this.config.obBin, "sync", "--path", this.config.vaultDir, "--continuous"], {
+      proc = Bun.spawn([this.config.obBin, ...syncArgs], {
         env: obEnv(this.config),
         stdout: "pipe",
         stderr: "pipe",

@@ -75,6 +75,10 @@ export interface AppSettings {
   statuses: StatusDef[];
   /** How the vault is kept in sync — drives whether we warn when `ob` is down. */
   syncMode: "obsidian" | "external" | "none";
+  /** ob `sync --configs` value (config categories to sync); empty = default. */
+  syncConfigs: string;
+  /** ob `sync --file-types` value (attachment types to sync); empty = default. */
+  syncFileTypes: string;
   /** Whether the first-run wizard has been completed. */
   onboarded: boolean;
 }
@@ -95,6 +99,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyEnabled: false,
   statuses: DEFAULT_STATUSES,
   syncMode: "external",
+  syncConfigs: "",
+  syncFileTypes: "",
   onboarded: false,
 };
 
@@ -115,6 +121,8 @@ const KEY = {
   notifyEnabled: "notify_enabled",
   statuses: "statuses",
   syncMode: "sync_mode",
+  syncConfigs: "sync_configs",
+  syncFileTypes: "sync_file_types",
   onboarded: "onboarded",
 } as const;
 
@@ -167,6 +175,8 @@ export function loadSettings(db: Database): AppSettings {
   }
   const mode = getSetting(db, KEY.syncMode);
   if (mode === "obsidian" || mode === "external" || mode === "none") s.syncMode = mode;
+  s.syncConfigs = getSetting(db, KEY.syncConfigs) ?? s.syncConfigs;
+  s.syncFileTypes = getSetting(db, KEY.syncFileTypes) ?? s.syncFileTypes;
   s.onboarded = getSetting(db, KEY.onboarded) === "1";
   return s;
 }
@@ -210,6 +220,8 @@ export function saveSettings(db: Database, patch: Partial<AppSettings>): AppSett
     if (clean.length) setSetting(db, KEY.statuses, JSON.stringify(clean));
   }
   if (patch.syncMode !== undefined) setSetting(db, KEY.syncMode, patch.syncMode);
+  if (patch.syncConfigs !== undefined) setSetting(db, KEY.syncConfigs, patch.syncConfigs.trim());
+  if (patch.syncFileTypes !== undefined) setSetting(db, KEY.syncFileTypes, patch.syncFileTypes.trim());
   if (patch.onboarded !== undefined) setSetting(db, KEY.onboarded, patch.onboarded ? "1" : "0");
   return loadSettings(db);
 }
