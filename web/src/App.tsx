@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
-import { todayStr } from "./lib/format";
+import { todayStr, obsidianUrl } from "./lib/format";
 import { useBootstrap } from "./queries";
+import { VaultNameDialog } from "./components/VaultNameDialog";
 import { AppContext } from "./app-context";
 import type { Task } from "./types";
 import { Sidebar } from "./components/Sidebar";
@@ -47,6 +48,7 @@ export function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [live, setLive] = useState<"connected" | "reconnecting">("reconnecting");
   const [captureTarget, setCaptureTarget] = useState<string | undefined>(undefined);
+  const [obsidianPath, setObsidianPath] = useState<string | null>(null);
   const loc = useLocation();
 
   // New tasks inherit the current view: due today on Today, the tag on a tag
@@ -62,6 +64,15 @@ export function App() {
     setAiAuto(auto);
     setAiOpen(true);
   }, []);
+
+  const openObsidian = useCallback(
+    (path: string) => {
+      const name = boot.data?.settings.obsidianVaultName?.trim();
+      if (name) window.location.href = obsidianUrl(name, path);
+      else setObsidianPath(path); // prompt once via the styled dialog
+    },
+    [boot.data],
+  );
 
   useEffect(() => {
     const onStatus = (e: Event) => setLive((e as CustomEvent).detail);
@@ -81,6 +92,7 @@ export function App() {
         return;
       }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "/") { e.preventDefault(); setPaletteOpen(true); return; } // global search
       if (capture || aiOpen) return; // a capture modal is already open
       if (e.key === "q") { e.preventDefault(); setCapture("single"); }
       else if (e.key === "b") { e.preventDefault(); setCapture("bulk"); }
@@ -100,7 +112,7 @@ export function App() {
     settings?.syncMode === "obsidian" && !!sync && sync.desired && sync.state !== "running" && sync.state !== "starting";
 
   return (
-    <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, captureTarget, setCaptureTarget }}>
+    <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, openObsidian, captureTarget, setCaptureTarget }}>
       <div className="flex h-full">
         <aside className="hidden w-64 shrink-0 border-r md:block" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
           <Sidebar />
@@ -185,6 +197,7 @@ export function App() {
       <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} autoProcess={aiAuto} />
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
       {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
+      <VaultNameDialog path={obsidianPath} defaultName={vaultName} onClose={() => setObsidianPath(null)} />
       <Toaster />
     </AppContext.Provider>
   );

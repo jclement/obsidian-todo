@@ -14,8 +14,11 @@ function Tab({ to, icon, label, badge }: { to: string; icon: string; label: stri
       <span className="text-base">{icon}</span>
       {label}
       {badge != null && badge > 0 && (
-        <span className="absolute right-[20%] top-1 min-w-3.5 rounded-full px-1 text-[0.55rem] leading-tight text-white" style={{ background: "var(--color-accent)" }}>
-          {badge}
+        <span
+          className="absolute right-[16%] -top-0.5 grid h-[1.1rem] min-w-[1.1rem] place-items-center rounded-full px-1 text-[0.6rem] font-semibold leading-none tabular-nums text-white"
+          style={{ background: "var(--color-accent)" }}
+        >
+          {badge > 99 ? "99+" : badge}
         </span>
       )}
     </NavLink>
@@ -31,7 +34,7 @@ export function MobileNav({ onAdd }: { onAdd: () => void }) {
       <button onClick={onAdd} aria-label="New task" className="flex flex-1 flex-col items-center justify-center">
         <span className="grid size-11 -translate-y-3 place-items-center rounded-full text-2xl text-white shadow-lg" style={{ background: "var(--color-accent)" }}>＋</span>
       </button>
-      <Tab to="/tags" icon="⊙" label="Tags" />
+      <Tab to="/tags" icon="▦" label="Browse" />
       <Tab to="/settings" icon="⚙" label="Settings" />
     </nav>
   );
