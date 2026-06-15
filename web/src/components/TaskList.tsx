@@ -37,7 +37,8 @@ export function TaskList({
       } else if (e.key === "x") {
         const t = tasks[Math.min(sel, tasks.length - 1)];
         if (t) complete.mutate(t);
-      } else if (e.key === "e" || e.key === "Enter") {
+      } else if (e.key === "e") {
+        e.preventDefault();
         const t = tasks[Math.min(sel, tasks.length - 1)];
         if (t) onEdit(t);
       }

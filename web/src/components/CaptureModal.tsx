@@ -52,10 +52,9 @@ export function CaptureModal({
             defaults={defaults}
             placeholder={placeholder}
             onOpenAi={() => { onClose(); onOpenAi(); }}
-            onSubmitted={onClose}
           />
           <p className="mt-2 px-1 text-xs" style={{ color: "var(--color-text-3)" }}>
-            Enter to add · dates, #tags and ! priority are parsed · <kbd>b</kbd> bulk · <kbd>v</kbd> voice · <kbd>a</kbd> AI
+            Enter adds another · Esc to close · dates, #tags and ! priority are parsed
           </p>
         </Dialog.Content>
       </Dialog.Portal>
