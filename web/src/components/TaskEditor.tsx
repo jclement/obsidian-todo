@@ -47,6 +47,7 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
   const boot = useBootstrap();
   const statuses = boot.data?.settings.statuses?.length ? boot.data.settings.statuses : FALLBACK_STATUSES;
   const subRef = useRef<SubtaskNotesHandle>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
 
   // workingTask carries the freshest file_hash (updated after every write) so we
   // never reuse a stale hash across sub-task toggles + the property save.
@@ -70,6 +71,13 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
     setRecurrence(task.recurrence ?? "");
     setReminder(task.reminder ?? "");
   }, [task]);
+
+  // Auto-grow the title so long descriptions wrap instead of scrolling (no
+  // stray inner scrollbar).
+  useEffect(() => {
+    const el = titleRef.current;
+    if (el) { el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`; }
+  }, [desc, task]);
 
   if (!task) return null;
   // Always operate on a Task that matches the open task (workingTask if fresh).
@@ -109,11 +117,12 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
 
           <div className="px-5 pt-5">
             <textarea
+              ref={titleRef}
               autoFocus
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               rows={1}
-              className="w-full resize-none rounded-lg bg-transparent text-[1.05rem] font-medium leading-snug outline-none placeholder:text-[var(--color-text-3)]"
+              className="w-full resize-none overflow-hidden rounded-lg bg-transparent text-[1.05rem] font-medium leading-snug outline-none placeholder:text-[var(--color-text-3)]"
               placeholder="Task description"
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void save(); }}
             />

@@ -6,6 +6,7 @@ import type { Task } from "../types";
 import { useComplete, useUncomplete } from "../queries";
 import { dueClass, dueLabel, PRIORITY_META, descWithoutTags, extractTags } from "../lib/format";
 import { useOpenInObsidian } from "../lib/obsidian";
+import { Inline } from "./Inline";
 import { Link } from "react-router-dom";
 
 const DUE_COLOR: Record<string, string> = {
@@ -103,7 +104,7 @@ export function TaskRow({
               className={clsx("truncate text-[0.95rem] leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
               style={{ color: task.status === "done" || task.status === "cancelled" ? "var(--color-text-3)" : "var(--color-text)" }}
             >
-              {desc || "(untitled)"}
+              {desc ? <Inline text={desc} onWikilink={openInObsidian} /> : "(untitled)"}
             </span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs" style={{ color: "var(--color-text-3)" }}>
