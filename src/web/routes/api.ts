@@ -153,14 +153,14 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
   app.post("/ai/parse", async (c) => {
     const { text } = await c.req.json();
     if (!text || typeof text !== "string") return c.json({ error: "bad_request", message: "text required" }, 400);
-    const drafts = await parseTextToTasks(ctx.getSettings(), text, { notes: noteList().map((n) => n.note), now: ctx.now() });
-    return c.json({ drafts });
+    const { drafts, confidence } = await parseTextToTasks(ctx.getSettings(), text, { notes: noteList().map((n) => n.note), now: ctx.now() });
+    return c.json({ drafts, confidence });
   });
 
   app.post("/ai/capture", async (c) => {
     const { text } = await c.req.json();
     if (!text || typeof text !== "string") return c.json({ error: "bad_request", message: "text required" }, 400);
-    const drafts = await parseTextToTasks(ctx.getSettings(), text, { notes: noteList().map((n) => n.note), now: ctx.now() });
+    const { drafts } = await parseTextToTasks(ctx.getSettings(), text, { notes: noteList().map((n) => n.note), now: ctx.now() });
     const created = [];
     for (const d of drafts) created.push(await ctx.service.add(sanitizeAdd(d as unknown as Record<string, unknown>)));
     return c.json({ tasks: created });

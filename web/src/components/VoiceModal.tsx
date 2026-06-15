@@ -70,6 +70,22 @@ export function VoiceModal({
 
   const stop = () => recRef.current?.state === "recording" && recRef.current.stop();
 
+  // Space or Enter stops recording (transcribe); Escape cancels.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        stop();
+      } else if (e.key === "Escape" && state === "recording") {
+        e.preventDefault();
+        stop();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, state]);
+
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && (recRef.current?.state === "recording" ? stop() : onClose())}>
       <Dialog.Portal>
@@ -98,7 +114,7 @@ export function VoiceModal({
           </button>
 
           <p className="text-center text-xs" style={{ color: "var(--color-text-3)" }}>
-            {state === "recording" ? "Tap the mic when you're done" : "Processing your audio"}
+            {state === "recording" ? "Tap the mic or press space when you're done" : "Processing your audio"}
           </p>
         </Dialog.Content>
       </Dialog.Portal>

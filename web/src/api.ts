@@ -69,7 +69,7 @@ export const api = {
   saveSettings: (patch: Partial<Settings> & { openaiKey?: string; ntfyToken?: string }) =>
     req<Settings>("PUT", "/settings", patch),
 
-  aiParse: (text: string) => req<{ drafts: TaskDraft[] }>("POST", "/ai/parse", { text }).then((r) => r.drafts),
+  aiParse: (text: string) => req<{ drafts: TaskDraft[]; confidence: number }>("POST", "/ai/parse", { text }),
   aiCapture: (text: string) => req<{ tasks: Task[] }>("POST", "/ai/capture", { text }).then((r) => r.tasks),
   transcribe: async (audio: Blob): Promise<string> => {
     const form = new FormData();

@@ -36,7 +36,9 @@ function systemPrompt(today: string, notes: string[]): string {
   return [
     "You convert a block of natural-language text into a list of concrete tasks.",
     `Today is ${today}. Resolve all relative dates (\"tomorrow\", \"next Friday\", \"in 3 days\") to absolute YYYY-MM-DD.`,
-    "Return STRICT JSON: {\"tasks\":[{...}]}. Each task object may have:",
+    "Return STRICT JSON: {\"confidence\": 0.0-1.0, \"tasks\":[{...}]}.",
+    "confidence = how sure you are the input describes actual tasks (1.0 = clearly actionable items; below ~0.4 = vague/ambiguous/not task-like, e.g. random speech or an unclear dictation).",
+    "Each task object may have:",
     "  description (string, required) — short imperative task text, WITHOUT a leading checkbox or #task tag.",
     "  due (YYYY-MM-DD), scheduled (YYYY-MM-DD), start (YYYY-MM-DD) — optional.",
     "  priority — one of: highest, high, medium, normal, low, lowest. Map 'urgent'/'asap'→high or highest.",
@@ -48,11 +50,17 @@ function systemPrompt(today: string, notes: string[]): string {
   ].join("\n");
 }
 
+export interface ParseResult {
+  drafts: ParsedTaskDraft[];
+  /** 0..1 — the model's confidence the input describes real tasks. */
+  confidence: number;
+}
+
 export async function parseTextToTasks(
   settings: AppSettings,
   text: string,
   opts: { notes?: string[]; now?: Date } = {},
-): Promise<ParsedTaskDraft[]> {
+): Promise<ParseResult> {
   if (!settings.openaiKey) throw new AiError("NO_KEY", "OpenAI API key is not configured. Add it in Settings.");
   const today = todayYmd(opts.now ?? new Date());
 
@@ -75,7 +83,16 @@ export async function parseTextToTasks(
   }
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const content = data.choices?.[0]?.message?.content ?? "{}";
-  return normalizeDrafts(content);
+  const drafts = normalizeDrafts(content);
+  let confidence = 0.5;
+  try {
+    const c = (JSON.parse(content) as { confidence?: unknown }).confidence;
+    if (typeof c === "number" && isFinite(c)) confidence = Math.max(0, Math.min(1, c));
+    else confidence = drafts.length ? 0.7 : 0.1;
+  } catch {
+    confidence = drafts.length ? 0.7 : 0.1;
+  }
+  return { drafts, confidence };
 }
 
 export function normalizeDrafts(content: string): ParsedTaskDraft[] {

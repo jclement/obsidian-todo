@@ -71,10 +71,10 @@ export function queryTasks(db: Database, filter: TaskFilter = {}): TaskDTO[] {
   const { sql: whereSql, params } = buildWhere(filter);
   const order =
     filter.sort === "priority"
-      ? `ORDER BY ${PRIORITY_RANK}, t.due IS NULL, t.due`
+      ? `ORDER BY ${PRIORITY_RANK}, t.due IS NULL, t.due, t.path, t.line`
       : filter.sort === "created"
-        ? "ORDER BY t.created IS NULL, t.created DESC"
-        : `ORDER BY t.due IS NULL, t.due, ${PRIORITY_RANK}`;
+        ? "ORDER BY t.created IS NULL, t.created DESC, t.path, t.line"
+        : `ORDER BY t.due IS NULL, t.due, ${PRIORITY_RANK}, t.path, t.line`;
   let sql = `${SELECT} ${whereSql} ${order}`;
   if (filter.limit) {
     sql += " LIMIT ?";
@@ -105,7 +105,7 @@ export function viewToday(db: Database, now = new Date()): TaskDTO[] {
     .query<TaskRow, [string, string]>(
       `${SELECT} WHERE t.status IN ('todo','in_progress','other')
        AND ((t.due IS NOT NULL AND t.due <= ?) OR (t.scheduled IS NOT NULL AND t.scheduled <= ?))
-       ORDER BY t.due IS NULL, t.due, ${PRIORITY_RANK}`,
+       ORDER BY t.due IS NULL, t.due, ${PRIORITY_RANK}, t.path, t.line`,
     )
     .all(today, today);
   return rows.map(rowToDTO);
@@ -119,7 +119,7 @@ export function viewUpcoming(db: Database, days = 7, now = new Date()): TaskDTO[
     .query<TaskRow, [string, string, string, string]>(
       `${SELECT} WHERE t.status IN ('todo','in_progress','other')
        AND ((t.due BETWEEN ? AND ?) OR (t.scheduled BETWEEN ? AND ?))
-       ORDER BY COALESCE(t.due, t.scheduled), ${PRIORITY_RANK}`,
+       ORDER BY COALESCE(t.due, t.scheduled), ${PRIORITY_RANK}, t.path, t.line`,
     )
     .all(from, to, from, to);
   return rows.map(rowToDTO);
@@ -164,7 +164,7 @@ export function listProjects(db: Database, excludeFolders: string[] = []): Proje
        FROM tasks t
        GROUP BY t.path
        HAVING open_count > 0
-       ORDER BY next_due IS NULL, next_due, note`,
+       ORDER BY next_due IS NULL, next_due, note, path`,
     )
     .all();
   if (!excludeFolders.length) return rows;

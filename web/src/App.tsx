@@ -81,6 +81,7 @@ export function App() {
         return;
       }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (capture || aiOpen) return; // a capture modal is already open
       if (e.key === "q") { e.preventDefault(); setCapture("single"); }
       else if (e.key === "b") { e.preventDefault(); setCapture("bulk"); }
       else if (e.key === "v") { e.preventDefault(); setCapture("voice"); }
@@ -88,7 +89,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAi]);
+  }, [openAi, capture, aiOpen]);
 
   const settings = boot.data?.settings;
   const vaultName = boot.data?.vaultName ?? "Vault";

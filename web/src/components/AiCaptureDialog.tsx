@@ -3,7 +3,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { api } from "../api";
 import { useAddMany } from "../queries";
 import { toast } from "../toast";
-import { DictateButton } from "./DictateButton";
 import type { TaskDraft } from "../types";
 
 /**
@@ -27,6 +26,7 @@ export function AiCaptureDialog({
   const [drafts, setDrafts] = useState<TaskDraft[] | null>(null);
   const [skip, setSkip] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [warn, setWarn] = useState<string | null>(null);
   const addMany = useAddMany();
 
   useEffect(() => {
@@ -34,17 +34,28 @@ export function AiCaptureDialog({
       setText(initialText);
       setDrafts(null);
       setSkip(new Set());
+      setWarn(null);
       if (autoProcess && initialText.trim()) void process(initialText);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialText]);
 
+  // Low confidence (or nothing found) → keep the (possibly transcribed) text
+  // editable with a hint, rather than dropping the user on an empty preview.
   const process = async (override?: string) => {
     const t = override ?? text;
     if (!t.trim()) return;
     setLoading(true);
     try {
-      setDrafts(await api.aiParse(t));
+      const { drafts: d, confidence } = await api.aiParse(t);
+      if (d.length === 0 || confidence < 0.45) {
+        setText(t);
+        setWarn(d.length === 0 ? "AI didn't find clear tasks here — tweak the wording and try again." : "AI wasn't confident about that — tweak the wording and try again.");
+        setDrafts(null);
+      } else {
+        setWarn(null);
+        setDrafts(d);
+      }
     } catch (e) {
       toast(e instanceof Error ? e.message : "AI parse failed", "error");
     } finally {
@@ -72,26 +83,28 @@ export function AiCaptureDialog({
           className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(92vw,40rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 overflow-hidden rounded-2xl border p-5 shadow-2xl outline-none"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
         >
-          <Dialog.Title className="text-sm font-semibold">✨ Capture with AI</Dialog.Title>
+          <Dialog.Title className="text-sm font-semibold">Capture with AI</Dialog.Title>
           {!aiEnabled && (
             <p className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: "var(--color-amber)", color: "var(--color-amber)" }}>
-              Add an OpenAI API key in Settings to enable AI capture and dictation.
+              Add an OpenAI API key in Settings to enable AI capture.
             </p>
           )}
           {!drafts && (
             <>
-              <div className="flex gap-2">
-                <textarea
-                  autoFocus
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  rows={6}
-                  placeholder="Paste notes, an email, or a brain-dump… or dictate. AI will extract tasks with dates, tags, and priorities."
-                  className="flex-1 resize-none rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
-                  style={{ borderColor: "var(--color-border)" }}
-                />
-                <DictateButton enabled={aiEnabled} onText={(t) => setText((cur) => (cur ? cur + "\n" + t : t))} />
-              </div>
+              {warn && (
+                <p className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: "var(--color-amber)", color: "var(--color-amber)" }}>
+                  {warn}
+                </p>
+              )}
+              <textarea
+                autoFocus
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={6}
+                placeholder="Paste notes, an email, or a brain-dump. AI extracts tasks with dates, tags, and priorities."
+                className="w-full resize-none rounded-md border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
+                style={{ borderColor: "var(--color-border)" }}
+              />
               <div className="flex justify-end gap-2">
                 <Dialog.Close className="rounded-md border px-4 py-2 text-sm" style={{ borderColor: "var(--color-border-strong)" }}>
                   Cancel
@@ -102,7 +115,7 @@ export function AiCaptureDialog({
                   className="rounded-md px-4 py-2 text-sm font-medium disabled:opacity-40"
                   style={{ background: "var(--color-accent)", color: "white" }}
                 >
-                  {loading ? "Thinking…" : "Extract tasks"}
+                  {loading ? "Thinking…" : warn ? "Try again" : "Extract tasks"}
                 </button>
               </div>
             </>
