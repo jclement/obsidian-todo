@@ -4,7 +4,8 @@ import { useDrag } from "@use-gesture/react";
 import clsx from "clsx";
 import type { Task } from "../types";
 import { useComplete, useUncomplete } from "../queries";
-import { dueClass, dueLabel, PRIORITY_META, descWithoutTags, extractTags, obsidianUrl } from "../lib/format";
+import { dueClass, dueLabel, PRIORITY_META, descWithoutTags, extractTags } from "../lib/format";
+import { useOpenInObsidian } from "../lib/obsidian";
 import { Link } from "react-router-dom";
 
 const DUE_COLOR: Record<string, string> = {
@@ -30,6 +31,7 @@ export function TaskRow({
 }) {
   const complete = useComplete();
   const uncomplete = useUncomplete();
+  const openInObsidian = useOpenInObsidian();
   const [committing, setCommitting] = useState(false);
   const x = useMotionValue(0);
 
@@ -130,15 +132,14 @@ export function TaskRow({
           </div>
         </div>
 
-        <a
-          href={obsidianUrl(vaultName, task.path)}
-          onClick={(e) => e.stopPropagation()}
+        <button
+          onClick={(e) => { e.stopPropagation(); openInObsidian(task.path); }}
           title="Open in Obsidian"
           className="opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100"
           style={{ color: "var(--color-text-3)" }}
         >
           ↗
-        </a>
+        </button>
       </motion.div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { Priority, Task, TaskStatus } from "../types";
 import { useCancel, useComplete, useRemove, useUpdate } from "../queries";
-import { obsidianUrl } from "../lib/format";
+import { useOpenInObsidian } from "../lib/obsidian";
 
 const PRIORITIES: { value: Priority; label: string }[] = [
   { value: "highest", label: "Highest" },
@@ -35,6 +35,7 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const complete = useComplete();
   const cancel = useCancel();
   const remove = useRemove();
+  const openInObsidian = useOpenInObsidian();
 
   const [desc, setDesc] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
@@ -124,9 +125,9 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
 
           {/* Footer */}
           <div className="mt-4 flex items-center justify-between gap-2 border-t px-5 py-3" style={{ borderColor: "var(--color-border)" }}>
-            <a href={obsidianUrl(vaultName, task.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
+            <button onClick={() => openInObsidian(task.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
               {task.path}:{task.line} ↗
-            </a>
+            </button>
             <div className="flex shrink-0 gap-2">
               <Dialog.Close className="rounded-lg border px-4 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Close</Dialog.Close>
               <button onClick={save} className="rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>

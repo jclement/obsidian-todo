@@ -87,7 +87,11 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
     return c.json({ tasks: queryTasks(db, filterFromQuery(q)) });
   });
 
-  app.get("/projects", (c) => c.json({ projects: listProjects(db, ctx.getSettings().projectExcludeFolders) }));
+  app.get("/projects", (c) => {
+    const s = ctx.getSettings();
+    // The inbox has its own view; don't also list it as a project.
+    return c.json({ projects: listProjects(db, [...s.projectExcludeFolders, s.inboxNote]) });
+  });
   app.get("/tags", (c) => c.json({ tags: listTags(db) }));
   app.get("/notes", (c) => c.json({ notes: noteList() }));
   app.get("/counts", (c) => c.json(counts(db, ctx.getSettings().inboxNote, ctx.now())));
