@@ -21,7 +21,7 @@ import { createApiToken, listApiTokens, revokeApiToken } from "../../auth/tokens
 import { listConnections, revokeClient } from "../../oauth/router.ts";
 import { counts } from "../../index/queries.ts";
 import { readTasksPluginConfig } from "../../vault/tasks-plugin.ts";
-import { obInstalled, obListRemoteVaults, obLogin, obLogout, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
+import { ALL_SYNC_CONFIGS, obInstalled, obListRemoteVaults, obLogin, obLogout, obSyncConfig, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
 
 export function adminApiRouter() {
   const app = new Hono<AppEnv>();
@@ -176,21 +176,34 @@ export function adminApiRouter() {
   // end-to-end encryption password for encrypted vaults.
   app.post("/sync/link", async (c) => {
     const { db, config, sync } = deps(c);
-    const { vault, password, deviceName, configs, fileTypes } = await c.req.json();
+    const { vault, password, deviceName, configs } = await c.req.json();
     if (!vault) return c.json({ error: "Vault name or ID is required." }, 400);
-    // config/attachment categories are applied to the continuous `ob sync`
-    // process (sync-setup itself doesn't accept them), persisted in settings.
-    deps(c).taskCtx.updateSettings({
-      syncConfigs: typeof configs === "string" ? configs : "",
-      syncFileTypes: typeof fileTypes === "string" ? fileTypes : "",
-    });
     const r = await obSyncSetup(config, String(vault).trim(), password ? String(password) : undefined, deviceName ? String(deviceName) : "obsidian-todo");
     if (!r.ok) return c.json({ error: `Connect failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}` }, 400);
     setSetting(db, "sync_configured", "1");
     recordAdmin(db, "sync.configure", { target: String(vault) });
+    // Pull Obsidian config (Tasks plugin data.json, etc.) — a SEPARATE `ob
+    // sync-config` command, before the daemon starts. Non-fatal.
+    const cfg = typeof configs === "string" ? configs.trim() : ALL_SYNC_CONFIGS;
+    if (cfg) {
+      const cr = await obSyncConfig(config, cfg);
+      if (!cr.ok) recordAdmin(db, "sync.config", { status: "error", detail: (cr.stderr || cr.stdout).trim().slice(0, 200) });
+    }
     sync?.start();
     return c.json({ ok: true });
   });
+  // Re-pull Obsidian config on an already-linked vault (the daemon holds a
+  // per-vault lock, so stop → sync-config → restart).
+  app.post("/sync/config", async (c) => {
+    const { db, config, sync } = deps(c);
+    if (sync) await sync.stop();
+    const r = await obSyncConfig(config, ALL_SYNC_CONFIGS);
+    recordAdmin(db, "sync.config", { status: r.ok ? "ok" : "error" });
+    if (sync) sync.start();
+    if (!r.ok) return c.json({ error: (r.stderr || r.stdout).trim().slice(0, 500) }, 400);
+    return c.json({ ok: true });
+  });
+
   app.post("/sync/unlink", async (c) => {
     const { db, config, sync } = deps(c);
     if (sync) await sync.stop();

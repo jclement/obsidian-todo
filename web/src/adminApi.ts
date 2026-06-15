@@ -53,8 +53,9 @@ export const admin = {
   syncAction: (action: "start" | "stop") => req<SyncStatus>("POST", `/sync/${action}`),
   syncAccount: () => req<{ installed: boolean; configured: boolean }>("GET", "/sync/account"),
   syncLogin: (email: string, password: string, mfa?: string) => req<{ ok: true; vaults: string }>("POST", "/sync/login", { email, password, mfa }),
-  syncLink: (args: { vault: string; password?: string; deviceName?: string; configs?: string; fileTypes?: string }) =>
+  syncLink: (args: { vault: string; password?: string; deviceName?: string; configs?: string }) =>
     req<{ ok: true }>("POST", "/sync/link", args),
+  syncConfigNow: () => req<{ ok: true }>("POST", "/sync/config"),
   syncUnlink: () => req<{ ok: true }>("POST", "/sync/unlink"),
   tasksConfig: () => req<{ available: boolean; globalFilter?: string; statuses?: { symbol: string; name: string; type: string }[] }>("GET", "/tasks-config"),
 

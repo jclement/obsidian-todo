@@ -40,8 +40,7 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
   const [vault, setVault] = useState("");
   const [encPassword, setEncPassword] = useState("");
   const [device, setDevice] = useState("obsidian-todo");
-  const [configs, setConfigs] = useState("");
-  const [fileTypes, setFileTypes] = useState("");
+  const [configs, setConfigs] = useState("app,appearance,appearance-data,hotkey,core-plugin,core-plugin-data,community-plugin,community-plugin-data");
 
   const login = useMutation({
     mutationFn: () => admin.syncLogin(email, password, mfa || undefined),
@@ -49,7 +48,7 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
     onError: (e) => toast(e instanceof Error ? e.message : "Login failed", "error"),
   });
   const link = useMutation({
-    mutationFn: () => admin.syncLink({ vault, password: encPassword || undefined, deviceName: device, configs, fileTypes }),
+    mutationFn: () => admin.syncLink({ vault, password: encPassword || undefined, deviceName: device, configs }),
     onSuccess: () => { toast("Connected — sync started", "success"); onConfigured(); },
     onError: (e) => toast(e instanceof Error ? e.message : "Connect failed", "error"),
   });
@@ -84,13 +83,9 @@ function SetupWizard({ onConfigured }: { onConfigured: () => void }) {
         <input className={field} style={inputStyle} type="password" placeholder="Encryption password (end-to-end encrypted vaults only)" value={encPassword} onChange={(e) => setEncPassword(e.target.value)} />
         <input className={field} style={inputStyle} placeholder="Device name" value={device} onChange={(e) => setDevice(e.target.value)} />
         <label className="block text-xs" style={{ color: "var(--color-text-3)" }}>
-          Config categories to sync — passed to <code>ob sync --configs</code> (lets the app read your Tasks-plugin
-          settings). Leave blank for ob's default. e.g. community-plugin-data,core-plugin-data
-          <input className={field + " mt-1"} style={inputStyle} value={configs} onChange={(e) => setConfigs(e.target.value)} placeholder="(blank = default)" />
-        </label>
-        <label className="block text-xs" style={{ color: "var(--color-text-3)" }}>
-          Attachment types — passed to <code>ob sync --file-types</code>. Leave blank for ob's default.
-          <input className={field + " mt-1"} style={inputStyle} value={fileTypes} onChange={(e) => setFileTypes(e.target.value)} placeholder="(blank = default)" />
+          Obsidian config to sync — runs <code>ob sync-config --configs</code> after linking, so the app can read your
+          Tasks-plugin settings. Blank to skip. (Config sync is bidirectional.)
+          <input className={field + " mt-1"} style={inputStyle} value={configs} onChange={(e) => setConfigs(e.target.value)} placeholder="blank to skip" />
         </label>
         <p className="text-xs" style={{ color: "var(--color-amber)" }}>
           Connecting downloads the remote vault into this server's vault folder and starts bidirectional sync. Existing
@@ -133,6 +128,19 @@ function Daemon({ onUnlinked }: { onUnlinked: () => void }) {
           </pre>
         ) : null}
       </Card>
+      <Card title="Obsidian config">
+        <button
+          className={btnGhost}
+          style={btnGhostStyle}
+          onClick={() => admin.syncConfigNow().then(() => toast("Pulled Obsidian config — re-import in Settings → Task statuses", "success")).catch((e) => toast(e instanceof Error ? e.message : "Failed", "error"))}
+        >
+          Sync Obsidian config now
+        </button>
+        <p className="mt-2 text-xs" style={{ color: "var(--color-text-3)" }}>
+          Pulls .obsidian (incl. the Tasks plugin's settings) into the vault via <code>ob sync-config</code>, so you can import them in Settings.
+        </p>
+      </Card>
+
       <Card title="Danger zone">
         <button
           className="rounded-lg border px-4 py-1.5 text-sm"

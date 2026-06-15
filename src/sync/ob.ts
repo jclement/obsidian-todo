@@ -85,6 +85,20 @@ export async function obSyncSetup(
   return runOb(config, args);
 }
 
+/** Obsidian Sync config categories — pulls the full .obsidian/ setup (incl. the
+ *  Tasks plugin's data.json) into the vault so we can read it. */
+export const ALL_SYNC_CONFIGS =
+  "app,appearance,appearance-data,hotkey,core-plugin,core-plugin-data,community-plugin,community-plugin-data";
+
+/**
+ * Reconfigure an already-linked vault — `--configs` lives on `sync-config`, NOT
+ * on sync-setup or the `sync` daemon. Run against the existing link in place
+ * (no re-download); the daemon should be stopped first (ob holds a per-vault lock).
+ */
+export async function obSyncConfig(config: Config, configs: string = ALL_SYNC_CONFIGS): Promise<ObResult> {
+  return runOb(config, ["sync-config", "--path", config.vaultDir, "--configs", configs]);
+}
+
 export async function obSyncStatus(config: Config): Promise<ObResult> {
   return runOb(config, ["sync-status", "--path", config.vaultDir], { timeoutMs: 30_000 });
 }
