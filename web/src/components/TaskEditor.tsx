@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import type { Priority, StatusDef, SubItem, Task } from "../types";
-import { useBootstrap, useCancel, useComplete, useRemove, useUpdate } from "../queries";
-import { api } from "../api";
+import type { Priority, StatusDef, Task } from "../types";
+import { useBootstrap, useCancel, useComplete, useRemove } from "../queries";
+import { api, ApiError } from "../api";
+import { toast } from "../toast";
 import { useOpenInObsidian } from "../lib/obsidian";
+import { SubtaskNotes, type SubtaskNotesHandle } from "./SubtaskNotes";
 
 const FALLBACK_STATUSES: StatusDef[] = [
   { symbol: " ", name: "To do", type: "TODO" },
@@ -24,7 +26,6 @@ const PRIORITIES: { value: Priority; label: string }[] = [
 const field =
   "w-full rounded-lg border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)]";
 const fieldStyle = { borderColor: "var(--color-border)" } as const;
-// Suppress password-manager autofill badges (the stray red square) on these fields.
 const noFill = { autoComplete: "off", "data-1p-ignore": true, "data-lpignore": "true", "data-form-type": "other" } as const;
 const lbl = "mb-1.5 block text-[0.7rem] font-medium uppercase tracking-wide";
 const lblStyle = { color: "var(--color-text-3)" } as const;
@@ -38,15 +39,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; vaultName: string; onClose: () => void }) {
-  const update = useUpdate();
+export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: string; onClose: () => void }) {
   const complete = useComplete();
   const cancel = useCancel();
   const remove = useRemove();
   const openInObsidian = useOpenInObsidian();
   const boot = useBootstrap();
   const statuses = boot.data?.settings.statuses?.length ? boot.data.settings.statuses : FALLBACK_STATUSES;
+  const subRef = useRef<SubtaskNotesHandle>(null);
 
+  // workingTask carries the freshest file_hash (updated after every write) so we
+  // never reuse a stale hash across sub-task toggles + the property save.
+  const [workingTask, setWorkingTask] = useState<Task | null>(task);
   const [desc, setDesc] = useState("");
   const [statusChar, setStatusChar] = useState(" ");
   const [priority, setPriority] = useState<Priority>("normal");
@@ -54,12 +58,10 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
   const [scheduled, setScheduled] = useState("");
   const [recurrence, setRecurrence] = useState("");
   const [reminder, setReminder] = useState("");
-  const [notes, setNotes] = useState("");
-  const [notesDirty, setNotesDirty] = useState(false);
-  const [subitems, setSubitems] = useState<SubItem[]>([]);
 
   useEffect(() => {
     if (!task) return;
+    setWorkingTask(task);
     setDesc(task.description);
     setStatusChar(task.status_char || " ");
     setPriority(task.priority);
@@ -67,28 +69,33 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
     setScheduled(task.scheduled ?? "");
     setRecurrence(task.recurrence ?? "");
     setReminder(task.reminder ?? "");
-    setNotes(task.notes ?? "");
-    setNotesDirty(false);
-    setSubitems(task.subitems ?? []);
   }, [task]);
 
   if (!task) return null;
-  const t = task;
+  // Always operate on a Task that matches the open task (workingTask if fresh).
+  const wt: Task = workingTask && workingTask.path === task.path && workingTask.line === task.line ? workingTask : task;
 
-  const save = () => {
-    update.mutate({
-      task: t,
-      changes: { description: desc, status_char: statusChar, priority, due: due || null, scheduled: scheduled || null, recurrence: recurrence || null, reminder: reminder || null },
-    });
-    if (notesDirty) void api.updateNotes(t, notes); // WS broadcast refreshes lists
-    onClose();
+  const save = async () => {
+    try {
+      const cur = (await subRef.current?.commit()) ?? wt; // flush notes; freshest hash
+      const changes: Record<string, unknown> = {};
+      if (desc !== cur.description) changes.description = desc;
+      if (statusChar !== (cur.status_char || " ")) changes.status_char = statusChar;
+      if (priority !== cur.priority) changes.priority = priority;
+      if ((due || null) !== cur.due) changes.due = due || null;
+      if ((scheduled || null) !== cur.scheduled) changes.scheduled = scheduled || null;
+      if ((recurrence || null) !== cur.recurrence) changes.recurrence = recurrence || null;
+      if ((reminder || null) !== cur.reminder) changes.reminder = reminder || null;
+      if (Object.keys(changes).length) await api.update(cur, changes);
+    } catch (e) {
+      const conflict = e instanceof ApiError && e.isConflict;
+      toast(conflict ? "Task changed elsewhere — reopen to retry" : e instanceof Error ? e.message : "Save failed", conflict ? "info" : "error");
+    } finally {
+      onClose();
+    }
   };
+
   const act = (fn: () => void) => { fn(); onClose(); };
-
-  const toggleSub = (sub: SubItem) => {
-    setSubitems((cur) => cur.map((s) => (s.line === sub.line ? { ...s, checked: !s.checked } : s)));
-    void api.toggleSubitem(t, sub.line).catch(() => setSubitems((cur) => cur.map((s) => (s.line === sub.line ? { ...s, checked: sub.checked } : s))));
-  };
 
   return (
     <Dialog.Root open={!!task} onOpenChange={(o) => !o && onClose()}>
@@ -100,7 +107,6 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
         >
           <Dialog.Title className="sr-only">Edit task</Dialog.Title>
 
-          {/* Title */}
           <div className="px-5 pt-5">
             <textarea
               autoFocus
@@ -109,11 +115,10 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
               rows={1}
               className="w-full resize-none rounded-lg bg-transparent text-[1.05rem] font-medium leading-snug outline-none placeholder:text-[var(--color-text-3)]"
               placeholder="Task description"
-              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void save(); }}
             />
           </div>
 
-          {/* Properties */}
           <div className="grid grid-cols-2 gap-3 px-5 pt-2">
             <Field label="Due"><input type="date" {...noFill} value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
             <Field label="Scheduled"><input type="date" {...noFill} value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
@@ -138,46 +143,21 @@ export function TaskEditor({ task, vaultName, onClose }: { task: Task | null; va
             </div>
           </div>
 
-          {/* Notes & sub-checklist */}
-          <div className="px-5 pt-3">
-            <span className={lbl} style={lblStyle}>Notes & sub-tasks</span>
-            {subitems.length > 0 && (
-              <div className="mb-2 space-y-1">
-                {subitems.map((s) => (
-                  <label key={s.line} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={s.checked} onChange={() => toggleSub(s)} />
-                    <span className={s.checked ? "line-through" : ""} style={s.checked ? { color: "var(--color-text-3)" } : undefined}>{s.text}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-            <textarea
-              {...noFill}
-              value={notes}
-              onChange={(e) => { setNotes(e.target.value); setNotesDirty(true); }}
-              rows={3}
-              placeholder={"Indented notes / checklist under this task, e.g.\n- [ ] Apples\n- [ ] Oranges"}
-              className={field + " resize-y font-mono text-xs"}
-              style={fieldStyle}
-            />
-            {subitems.length > 0 && <p className="mt-1 text-[0.7rem]" style={{ color: "var(--color-text-3)" }}>Tick boxes above to toggle instantly; edit the text to restructure (saved on Save).</p>}
-          </div>
+          <SubtaskNotes ref={subRef} task={wt} onTaskChange={setWorkingTask} />
 
-          {/* Quick actions */}
           <div className="mt-4 flex items-center gap-2 px-5">
-            <button onClick={() => act(() => complete.mutate(task))} className="rounded-lg px-3 py-1.5 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}>✓ Complete</button>
-            <button onClick={() => act(() => cancel.mutate(task))} className="rounded-lg border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Cancel task</button>
-            <button onClick={() => act(() => remove.mutate(task))} className="ml-auto rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)]" style={{ color: "var(--color-red)" }}>Delete</button>
+            <button onClick={() => act(() => complete.mutate(wt))} className="rounded-lg px-3 py-1.5 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}>✓ Complete</button>
+            <button onClick={() => act(() => cancel.mutate(wt))} className="rounded-lg border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Cancel task</button>
+            <button onClick={() => act(() => remove.mutate(wt))} className="ml-auto rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)]" style={{ color: "var(--color-red)" }}>Delete</button>
           </div>
 
-          {/* Footer */}
           <div className="mt-4 flex items-center justify-between gap-2 border-t px-5 py-3" style={{ borderColor: "var(--color-border)" }}>
-            <button onClick={() => openInObsidian(task.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
-              {task.path}:{task.line} ↗
+            <button onClick={() => openInObsidian(wt.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
+              {wt.path}:{wt.line} ↗
             </button>
             <div className="flex shrink-0 gap-2">
               <Dialog.Close className="rounded-lg border px-4 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Close</Dialog.Close>
-              <button onClick={save} className="rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>
+              <button onClick={() => void save()} className="rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>
             </div>
           </div>
         </Dialog.Content>

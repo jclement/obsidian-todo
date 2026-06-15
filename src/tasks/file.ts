@@ -61,7 +61,7 @@ export function parseTasksInFile(content: string, globalFilter = DEFAULT_GLOBAL_
       if (hasGlobalFilter(child, globalFilter)) break; // nested managed task → its own row
       noteLines.push(child);
       const m = SUBITEM.exec(child);
-      if (m) subitems.push({ line: j + 1, checked: m[3] !== " " && m[3] !== "", text: m[4]!.trim() });
+      if (m) subitems.push({ line: j + 1, checked: /[xX]/.test(m[3]!), text: m[4]!.trim() });
     }
     const notes = noteLines.length ? dedent(noteLines).join("\n") : "";
 
@@ -72,6 +72,8 @@ export function parseTasksInFile(content: string, globalFilter = DEFAULT_GLOBAL_
 
 /** Strip the common leading indentation off the note block for clean display. */
 function dedent(lines: string[]): string[] {
-  const min = Math.min(...lines.filter((l) => l.trim()).map((l) => (l.match(/^[ \t]*/)?.[0].length ?? 0)));
-  return lines.map((l) => l.slice(min));
+  const nonBlank = lines.filter((l) => l.trim());
+  if (!nonBlank.length) return lines.map(() => "");
+  const min = Math.min(...nonBlank.map((l) => (l.match(/^[ \t]*/)?.[0].length ?? 0)));
+  return lines.map((l) => (l.trim() ? l.slice(min) : ""));
 }

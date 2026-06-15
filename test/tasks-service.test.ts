@@ -119,6 +119,53 @@ describe("custom statuses & folder scoping", () => {
   });
 });
 
+describe("notes & sub-checklists", () => {
+  function buy() {
+    return queryTasks(db).find((t) => t.description === "Buy groceries")!;
+  }
+  test("updateNotes round-trips; re-check then UNCHECK both persist (the regression)", async () => {
+    vault.write("Projects/Barreleye.md", [
+      "# Barreleye",
+      "- [ ] #task Buy groceries",
+      "    - [ ] Apples",
+      "    - [x] Oranges",
+      "- [ ] #task next",
+    ].join("\n"));
+    await indexer.sweep();
+
+    let g = buy();
+    expect(g.subitems.map((s) => [s.text, s.checked])).toEqual([["Apples", false], ["Oranges", true]]);
+
+    // No-op round-trip leaves the block stable.
+    let r = (await svc.updateNotes({ path: g.path, line: g.line, expectedHash: g.file_hash, description: g.description }, g.notes))!;
+    expect(r.subitems.map((s) => [s.text, s.checked])).toEqual([["Apples", false], ["Oranges", true]]);
+
+    // Check Apples (whole-block write), using the FRESH hash returned each time.
+    r = (await svc.updateNotes({ path: r.path, line: r.line, expectedHash: r.file_hash, description: r.description }, r.notes.replace("- [ ] Apples", "- [x] Apples")))!;
+    expect(r.subitems.find((s) => s.text === "Apples")!.checked).toBe(true);
+
+    // Uncheck Apples — previously failed because the client reused a stale hash.
+    r = (await svc.updateNotes({ path: r.path, line: r.line, expectedHash: r.file_hash, description: r.description }, r.notes.replace("- [x] Apples", "- [ ] Apples")))!;
+    expect(r.subitems.find((s) => s.text === "Apples")!.checked).toBe(false);
+
+    // Sibling task untouched.
+    expect(queryTasks(db).some((t) => t.description === "next")).toBe(true);
+  });
+
+  test("toggleSubitem flips a single line and is reversible", async () => {
+    vault.write("Projects/Barreleye.md", ["# B", "- [ ] #task parent", "    - [ ] child"].join("\n"));
+    await indexer.sweep();
+    const sub = buyParent().subitems[0]!;
+    await svc.toggleSubitem("Projects/Barreleye.md", sub.line, undefined);
+    expect(buyParent().subitems[0]!.checked).toBe(true);
+    await svc.toggleSubitem("Projects/Barreleye.md", sub.line, undefined);
+    expect(buyParent().subitems[0]!.checked).toBe(false);
+  });
+  function buyParent() {
+    return queryTasks(db).find((t) => t.description === "parent")!;
+  }
+});
+
 describe("views", () => {
   test("today = overdue + due today", () => {
     const today = viewToday(db, NOW).map((t) => t.description);
