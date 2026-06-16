@@ -17,16 +17,19 @@ export function TagsView() {
           {!!projects.data?.length && (
             <section>
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-3)" }}>Projects</h2>
-              <div className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--color-border)" }}>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {projects.data.map((p) => (
                   <Link
                     key={p.path}
                     to={`/project?path=${encodeURIComponent(p.path)}`}
-                    className="flex items-center justify-between border-b px-3 py-2.5 text-sm last:border-0 hover:bg-[var(--color-surface-2)]"
-                    style={{ borderColor: "var(--color-border)" }}
+                    className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm hover:border-[var(--color-accent)]"
+                    style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
                   >
-                    <span className="truncate">{p.note}</span>
-                    <span className="ml-3 shrink-0 tabular-nums" style={{ color: "var(--color-text-3)" }}>{p.open_count}</span>
+                    <span className="truncate font-medium">{p.note}</span>
+                    <span className="flex shrink-0 items-center gap-1 tabular-nums" style={{ color: "var(--color-text-3)" }}>
+                      {p.open_count}
+                      <span className="text-[0.7rem]">open</span>
+                    </span>
                   </Link>
                 ))}
               </div>
