@@ -21,6 +21,9 @@ export function TaskList({
   showNote?: boolean;
 }) {
   const [sel, setSel] = useState(0);
+  // Don't show a selected row until the user actually starts keyboard-navigating
+  // (j/k/↑/↓). Otherwise the first row looks "selected" on every page.
+  const [navActive, setNavActive] = useState(false);
   const complete = useComplete();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -31,14 +34,16 @@ export function TaskList({
       if (!tasks.length) return;
       if (e.key === "j" || e.key === "ArrowDown") {
         e.preventDefault();
-        setSel((s) => Math.min(tasks.length - 1, s + 1));
+        setNavActive(true);
+        setSel((s) => (navActive ? Math.min(tasks.length - 1, s + 1) : 0));
       } else if (e.key === "k" || e.key === "ArrowUp") {
         e.preventDefault();
-        setSel((s) => Math.max(0, s - 1));
-      } else if (e.key === "x") {
+        setNavActive(true);
+        setSel((s) => (navActive ? Math.max(0, s - 1) : 0));
+      } else if (e.key === "x" && navActive) {
         const t = tasks[Math.min(sel, tasks.length - 1)];
         if (t) complete.mutate(t);
-      } else if (e.key === "e") {
+      } else if (e.key === "e" && navActive) {
         e.preventDefault();
         const t = tasks[Math.min(sel, tasks.length - 1)];
         if (t) onEdit(t);
@@ -46,7 +51,7 @@ export function TaskList({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [tasks, sel, complete, onEdit]);
+  }, [tasks, sel, navActive, complete, onEdit]);
 
   useEffect(() => {
     if (sel >= tasks.length) setSel(Math.max(0, tasks.length - 1));
@@ -57,7 +62,7 @@ export function TaskList({
   return (
     <div ref={containerRef} className="overflow-hidden rounded-2xl border shadow-[var(--shadow-card)]" style={{ borderColor: "var(--color-border)" }}>
       {tasks.map((t, i) => (
-        <TaskRow key={`${t.path}:${t.line}`} task={t} vaultName={vaultName} selected={i === sel} onEdit={onEdit} showNote={showNote} />
+        <TaskRow key={`${t.path}:${t.line}`} task={t} vaultName={vaultName} selected={navActive && i === sel} onEdit={onEdit} showNote={showNote} />
       ))}
     </div>
   );

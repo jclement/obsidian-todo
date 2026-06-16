@@ -48,10 +48,12 @@ export function AiCaptureDialog({
     if (!t.trim()) return;
     setLoading(true);
     try {
-      const { drafts: d, confidence } = await api.aiParse(t);
-      if (d.length === 0 || confidence < 0.45) {
+      const { drafts: d } = await api.aiParse(t);
+      // Be eager: if the model produced any tasks, show them for review/pruning.
+      // Only fall back to the editable text when it found nothing at all.
+      if (d.length === 0) {
         setText(t);
-        setWarn(d.length === 0 ? "AI didn't find clear tasks here — tweak the wording and try again." : "AI wasn't confident about that — tweak the wording and try again.");
+        setWarn("AI didn't find anything actionable here — tweak the wording and try again.");
         setDrafts(null);
       } else {
         setWarn(null);

@@ -98,15 +98,18 @@ export function TaskRow({
 
       <div {...bind()} style={{ touchAction: "pan-y" }}>
       <motion.div
-        style={{ x, background: "var(--color-surface)" }}
+        style={{ x }}
         whileTap={{ scale: 0.985 }}
         className={clsx(
-          "group relative flex items-start gap-3 border-b px-4 py-3 transition-colors active:bg-[var(--color-surface-2)] md:py-1.5 md:hover:bg-[var(--color-surface-2)]",
+          "group relative flex items-start gap-3 border-b px-4 py-3 transition-colors md:py-1.5",
+          selected
+            ? "bg-[var(--color-accent-soft)]"
+            : "bg-[var(--color-surface)] active:bg-[var(--color-surface-2)] md:hover:bg-[var(--color-surface-2)]",
           committing && "opacity-50",
         )}
       >
         <div
-          className={clsx("pointer-events-none absolute inset-y-0 left-0 w-0.5", selected && "bg-[var(--color-accent)]")}
+          className={clsx("pointer-events-none absolute inset-y-0 left-0 w-[3px]", selected && "bg-[var(--color-accent)]")}
         />
         <button
           aria-label={`${done ? "Mark incomplete" : "Complete"}: ${desc || "untitled"}`}

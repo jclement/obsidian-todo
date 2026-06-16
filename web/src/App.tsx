@@ -134,7 +134,7 @@ export function App() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <header
-            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:gap-4 md:px-6 md:pb-3"
+            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:gap-4 md:px-6 md:pb-4 md:pt-4"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
             <button
