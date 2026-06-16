@@ -115,7 +115,7 @@ export function TaskRow({
           aria-label={`${done ? "Mark incomplete" : "Complete"}: ${desc || "untitled"}`}
           title={`Status: [${task.status_char}]`}
           onClick={doComplete}
-          className="relative mt-0.5 grid size-[22px] shrink-0 place-items-center rounded-[6px] border text-[0.65rem] font-bold leading-none outline-none transition-colors before:absolute before:-inset-y-3 before:-left-3 before:right-0 hover:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:size-5"
+          className="relative mt-px grid size-[22px] shrink-0 place-items-center rounded-[6px] border text-[0.65rem] font-bold leading-none outline-none transition-colors before:absolute before:-inset-y-3 before:-left-3 before:right-0 hover:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:size-5"
           style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}
         >
           {task.status === "done" ? <Check className="size-3.5" strokeWidth={3} /> : task.status === "cancelled" ? <X className="size-3.5" strokeWidth={3} /> : task.status === "todo" ? "" : task.status_char}
