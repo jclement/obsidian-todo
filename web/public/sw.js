@@ -7,8 +7,10 @@
 //
 // Hashed /static assets are immutable, so cache-first. API GETs are network-first
 // with a cached fallback for offline reading. Writes always hit the network.
-const CACHE = "obtodo-v2";
-const SHELL = ["/icon.svg", "/manifest.webmanifest"];
+const CACHE = "obtodo-v3";
+// Precache "/" so a cold start works offline (and survives cache eviction);
+// navigations stay network-first below, so it's only ever a fallback.
+const SHELL = ["/", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

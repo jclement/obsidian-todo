@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { Menu, Plus } from "lucide-react";
 import { todayStr, obsidianUrl } from "./lib/format";
 import { useVisualViewport } from "./lib/useVisualViewport";
 import { useBootstrap } from "./queries";
@@ -115,6 +117,7 @@ export function App() {
 
   return (
     <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, openObsidian, captureTarget, setCaptureTarget }}>
+      <MotionConfig reducedMotion="user">
       <div className="flex h-[100dvh] overflow-hidden">
         <aside className="hidden w-64 shrink-0 border-r md:block" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
           <Sidebar />
@@ -123,7 +126,7 @@ export function App() {
         {navOpen && (
           <div className="fixed inset-0 z-50 md:hidden" onClick={() => setNavOpen(false)}>
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <aside className="absolute inset-y-0 left-0 w-72 overflow-y-auto overscroll-contain border-r pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+            <aside className="absolute inset-y-0 left-0 w-72 overflow-y-auto overscroll-contain border-r pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
               <Sidebar onNavigate={() => setNavOpen(false)} />
             </aside>
           </div>
@@ -135,24 +138,24 @@ export function App() {
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
             <button
-              className="-ml-1.5 grid size-10 place-items-center rounded-lg active:bg-[var(--color-surface-2)] md:hidden"
+              className="-ml-1.5 grid size-11 place-items-center rounded-lg outline-none active:bg-[var(--color-surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:hidden"
               onClick={() => setNavOpen(true)}
               aria-label="Menu"
             >
-              ☰
+              <Menu className="size-5" />
             </button>
             <div className="flex-1" />
             <button
               onClick={() => setCapture("single")}
-              className="hidden items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white md:flex"
+              className="hidden items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
               style={{ background: "var(--color-accent)" }}
               title="New task (q)"
             >
-              <span className="text-base leading-none">+</span> Add
+              <Plus className="size-4" /> Add
             </button>
             <button
               onClick={() => setPaletteOpen(true)}
-              className="hidden items-center gap-2 rounded-md border px-2.5 py-1 text-xs sm:flex"
+              className="hidden items-center gap-2 rounded-md border px-2.5 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex"
               style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-3)" }}
             >
               <span>Search…</span>
@@ -174,7 +177,7 @@ export function App() {
             </div>
           )}
 
-          <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-[calc(var(--nav-h)+1.5rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] sm:px-5 md:pb-8">
+          <div className="safe-x mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-[calc(var(--nav-h,4rem)+2.75rem)] [-webkit-overflow-scrolling:touch] sm:px-5 md:pb-8">
             <Routes>
               <Route path="/" element={<TodayView />} />
               <Route path="/upcoming" element={<UpcomingView />} />
@@ -210,6 +213,7 @@ export function App() {
       {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
       <VaultNameDialog path={obsidianPath} defaultName={vaultName} onClose={() => setObsidianPath(null)} />
       <Toaster />
+      </MotionConfig>
     </AppContext.Provider>
   );
 }

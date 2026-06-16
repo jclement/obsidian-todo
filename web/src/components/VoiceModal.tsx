@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Mic } from "lucide-react";
 import { api } from "../api";
 import { toast } from "../toast";
 
@@ -109,7 +110,7 @@ export function VoiceModal({
               className="relative grid size-24 place-items-center rounded-full text-4xl text-white transition-transform active:scale-95"
               style={{ background: state === "transcribing" ? "var(--color-surface-3)" : "var(--color-accent)" }}
             >
-              {state === "transcribing" ? "…" : "🎙"}
+              {state === "transcribing" ? "…" : <Mic className="size-10" />}
             </span>
           </button>
 

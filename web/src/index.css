@@ -34,7 +34,7 @@
   --color-border-strong: #d0d0d8;
   --color-text: #1b1b20;
   --color-text-2: #56565f;
-  --color-text-3: #8c8c97;
+  --color-text-3: #6c6c77; /* ~4.5:1 on white — AA for 13px meta text */
   --color-accent: #7c3aed;
   --color-accent-2: #6d28d9;
   --color-accent-soft: #efe9fd;
@@ -57,7 +57,7 @@
   --color-border-strong: #43434d;
   --color-text: #e6e6ea;
   --color-text-2: #a8a8b3;
-  --color-text-3: #6f6f7b;
+  --color-text-3: #8a8a96; /* ~4.5:1 on dark surface — AA for 13px meta text */
   --color-accent: #7c3aed;
   --color-accent-2: #9d6bff;
   --color-accent-soft: #2a2140;
@@ -94,9 +94,10 @@ body {
   overscroll-behavior: none;
 }
 
-/* iOS zooms into any focused control whose font is < 16px. Force 16px on phones
- * app-wide so focusing an input never triggers the zoom jump. */
-@media (max-width: 640px) {
+/* iOS zooms into any focused control whose font is < 16px. Force 16px on every
+ * touch device (keyed to pointer, not width, so it also covers large/landscape
+ * phones where the md: 14px field styles would otherwise apply). */
+@media (pointer: coarse) {
   input,
   textarea,
   select {
@@ -144,4 +145,20 @@ body {
 }
 .mic-ring {
   animation: pulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Honour the OS "Reduce Motion" setting: kill the infinite pulse and collapse
+ * every animation/transition to a near-instant change. (framer-motion springs
+ * are handled via <MotionConfig reducedMotion="user"> in App.tsx.) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .mic-ring {
+    animation: none !important;
+  }
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

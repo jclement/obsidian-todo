@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CircleCheck } from "lucide-react";
 import type { Task } from "../types";
 import { TaskRow } from "./TaskRow";
 import { useComplete } from "../queries";
@@ -66,7 +67,7 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="animate-in flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div className="grid size-16 place-items-center rounded-full" style={{ background: "var(--color-accent-soft)" }}>
-        <span className="text-2xl" style={{ color: "var(--color-accent)" }}>✓</span>
+        <CircleCheck className="size-7" style={{ color: "var(--color-accent)" }} />
       </div>
       <div className="text-base font-medium" style={{ color: "var(--color-text)" }}>{title}</div>
       {hint && <div className="max-w-xs text-sm" style={{ color: "var(--color-text-3)" }}>{hint}</div>}

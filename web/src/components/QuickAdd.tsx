@@ -1,4 +1,5 @@
 import { forwardRef, useMemo, useState } from "react";
+import { Plus, Sparkles } from "lucide-react";
 import { parseQuickAdd } from "../lib/quickAddParse";
 import { useAdd } from "../queries";
 
@@ -48,7 +49,7 @@ export const QuickAdd = forwardRef<
     return (
       <div className="rounded-xl border" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}>
         <div className="flex items-center gap-2 px-3 py-2">
-          <span style={{ color: "var(--color-accent)" }}>+</span>
+          <Plus className="size-4 shrink-0" style={{ color: "var(--color-accent)" }} />
           <input
             ref={ref}
             autoFocus={autoFocus}
@@ -64,10 +65,10 @@ export const QuickAdd = forwardRef<
           <button
             onClick={onOpenAi}
             title="Capture with AI / dictate"
-            className="grid size-10 shrink-0 place-items-center rounded-lg border text-sm md:size-9"
+            className="grid size-10 shrink-0 place-items-center rounded-lg border md:size-9"
             style={{ borderColor: "var(--color-border-strong)", color: aiEnabled ? "var(--color-accent-2)" : "var(--color-text-3)" }}
           >
-            ✨
+            <Sparkles className="size-4" />
           </button>
         </div>
         {(chips.length > 0 || inheritDue || inheritTag) && (

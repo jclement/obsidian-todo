@@ -1,6 +1,9 @@
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
+import { CalendarDays, Hash, Inbox, ListTodo, Search, Settings2, Sun } from "lucide-react";
 import { useProjects, useTags } from "../queries";
+
+const ico = "size-4 shrink-0 opacity-70";
 import { api } from "../api";
 import { toast } from "../toast";
 
@@ -57,19 +60,19 @@ export function CommandPalette({
         </Command.Group>
 
         <Command.Group heading="Go to" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-[var(--color-text-3)]">
-          <Item onSelect={() => go("/")}>☀ Today</Item>
-          <Item onSelect={() => go("/upcoming")}>▤ Upcoming</Item>
-          <Item onSelect={() => go("/inbox")}>✉ Inbox</Item>
-          <Item onSelect={() => go("/all")}>≣ All open</Item>
-          <Item onSelect={() => go("/search")}>⌕ Search</Item>
-          <Item onSelect={() => go("/settings")}>⚙ Settings</Item>
+          <Item onSelect={() => go("/")}><Sun className={ico} /> Today</Item>
+          <Item onSelect={() => go("/upcoming")}><CalendarDays className={ico} /> Upcoming</Item>
+          <Item onSelect={() => go("/inbox")}><Inbox className={ico} /> Inbox</Item>
+          <Item onSelect={() => go("/all")}><ListTodo className={ico} /> All open</Item>
+          <Item onSelect={() => go("/search")}><Search className={ico} /> Search</Item>
+          <Item onSelect={() => go("/settings")}><Settings2 className={ico} /> Settings</Item>
         </Command.Group>
 
         {!!projects.data?.length && (
           <Command.Group heading="Projects" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-[var(--color-text-3)]">
             {projects.data.slice(0, 50).map((p) => (
               <Item key={p.path} onSelect={() => go(`/project?path=${encodeURIComponent(p.path)}`)}>
-                # {p.note} <span className="ml-auto text-xs" style={{ color: "var(--color-text-3)" }}>{p.open_count}</span>
+                <Hash className={ico} /> {p.note} <span className="ml-auto text-xs" style={{ color: "var(--color-text-3)" }}>{p.open_count}</span>
               </Item>
             ))}
           </Command.Group>
@@ -78,7 +81,7 @@ export function CommandPalette({
         {!!tags.data?.length && (
           <Command.Group heading="Tags" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-[var(--color-text-3)]">
             {tags.data.slice(0, 50).map((t) => (
-              <Item key={t.tag} onSelect={() => go(`/tag/${encodeURIComponent(t.tag)}`)}>⊙ #{t.tag}</Item>
+              <Item key={t.tag} onSelect={() => go(`/tag/${encodeURIComponent(t.tag)}`)}><Hash className={ico} /> #{t.tag}</Item>
             ))}
           </Command.Group>
         )}

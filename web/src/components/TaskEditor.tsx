@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { ArrowUpRight, Check } from "lucide-react";
 import type { Priority, StatusDef, Task } from "../types";
 import { useBootstrap, useCancel, useComplete, useRemove } from "../queries";
 import { api, ApiError } from "../api";
@@ -106,16 +107,25 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
   const act = (fn: () => void) => { fn(); onClose(); };
 
   return (
-    <Dialog.Root open={!!task} onOpenChange={(o) => !o && onClose()}>
+    <Dialog.Root open={!!task} onOpenChange={(o) => { if (!o) { (document.activeElement as HTMLElement | null)?.blur(); onClose(); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto flex max-h-[min(92vh,calc(100dvh-var(--kb,0px)-1rem))] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[92vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto flex max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[92vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
-          onFocusCapture={(e) => (e.target as HTMLElement).scrollIntoView?.({ block: "center", behavior: "smooth" })}
         >
           <Dialog.Title className="sr-only">Edit task</Dialog.Title>
+          <div aria-hidden className="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full sm:hidden" style={{ background: "var(--color-border-strong)" }} />
 
+          <div
+            className="flex-1 overflow-y-auto"
+            onFocusCapture={(e) => {
+              // Don't fight the keyboard animation on the autofocused title; only
+              // ease a clipped field into view.
+              const el = e.target as HTMLElement;
+              if (el !== titleRef.current) el.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+            }}
+          >
           <div className="px-5 pt-5">
             <textarea
               ref={titleRef}
@@ -155,19 +165,20 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
 
           <SubtaskNotes ref={subRef} task={wt} onTaskChange={setWorkingTask} />
 
-          <div className="mt-4 flex items-center gap-2 px-5">
-            <button onClick={() => act(() => complete.mutate(wt))} className="rounded-lg px-3 py-1.5 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}>✓ Complete</button>
-            <button onClick={() => act(() => cancel.mutate(wt))} className="rounded-lg border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Cancel task</button>
-            <button onClick={() => act(() => remove.mutate(wt))} className="ml-auto rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)]" style={{ color: "var(--color-red)" }}>Delete</button>
+          <div className="mt-4 flex items-center gap-2 px-5 pb-4">
+            <button onClick={() => act(() => complete.mutate(wt))} className="flex min-h-[40px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium" style={{ background: "var(--color-green)", color: "#0a0a0a" }}><Check className="size-4" strokeWidth={2.5} /> Complete</button>
+            <button onClick={() => act(() => cancel.mutate(wt))} className="min-h-[40px] rounded-lg border px-3 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Cancel task</button>
+            <button onClick={() => act(() => remove.mutate(wt))} className="ml-auto min-h-[40px] rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)]" style={{ color: "var(--color-red)" }}>Delete</button>
+          </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-2 border-t px-5 py-3" style={{ borderColor: "var(--color-border)" }}>
-            <button onClick={() => openInObsidian(wt.path)} className="truncate text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
-              {wt.path}:{wt.line} ↗
+          <div className="flex shrink-0 items-center justify-between gap-2 border-t px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" style={{ borderColor: "var(--color-border)" }}>
+            <button onClick={() => openInObsidian(wt.path)} className="flex min-w-0 items-center gap-1 text-xs hover:underline" style={{ color: "var(--color-text-3)" }}>
+              <span className="truncate">{wt.path}:{wt.line}</span> <ArrowUpRight className="size-3.5 shrink-0" />
             </button>
             <div className="flex shrink-0 gap-2">
-              <Dialog.Close className="rounded-lg border px-4 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Close</Dialog.Close>
-              <button onClick={() => void save()} className="rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>
+              <Dialog.Close className="min-h-[40px] rounded-lg border px-4 py-1.5 text-sm" style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}>Close</Dialog.Close>
+              <button onClick={() => void save()} className="min-h-[40px] rounded-lg px-4 py-1.5 text-sm font-medium" style={{ background: "var(--color-accent)", color: "white" }}>Save</button>
             </div>
           </div>
         </Dialog.Content>

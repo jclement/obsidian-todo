@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ArrowUpRight } from "lucide-react";
 import { useTasks } from "../queries";
 import { useAppCtx } from "../app-context";
 import { Page, ListBody } from "./View";
@@ -22,8 +23,8 @@ export function ProjectView() {
   return (
     <Page title={note} subtitle={path}>
       <div className="mb-3 -mt-1">
-        <button onClick={() => openInObsidian(path)} className="text-xs" style={{ color: "var(--color-accent-2)" }}>
-          Open in Obsidian ↗
+        <button onClick={() => openInObsidian(path)} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--color-accent-2)" }}>
+          Open in Obsidian <ArrowUpRight className="size-3.5" />
         </button>
       </div>
       <ListBody loading={q.isLoading} tasks={q.data} empty={{ title: "No open tasks in this note" }} showNote={false} />

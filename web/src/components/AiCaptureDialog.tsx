@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Calendar, Repeat } from "lucide-react";
 import { api } from "../api";
 import { useAddMany } from "../queries";
 import { toast } from "../toast";
@@ -138,9 +139,9 @@ export function AiCaptureDialog({
                     />
                     <span>
                       <span>{d.description}</span>{" "}
-                      {d.due && <span style={{ color: "var(--color-amber)" }}>📅 {d.due}</span>}{" "}
+                      {d.due && <span className="inline-flex items-center gap-1 align-middle" style={{ color: "var(--color-amber)" }}><Calendar className="size-3.5" /> {d.due}</span>}{" "}
                       {d.priority && d.priority !== "normal" && <span style={{ color: "var(--color-text-3)" }}>{d.priority}</span>}{" "}
-                      {d.recurrence && <span style={{ color: "var(--color-text-3)" }}>🔁 {d.recurrence}</span>}{" "}
+                      {d.recurrence && <span className="inline-flex items-center gap-1 align-middle" style={{ color: "var(--color-text-3)" }}><Repeat className="size-3.5" /> {d.recurrence}</span>}{" "}
                       {d.target_note && <span style={{ color: "var(--color-text-3)" }}>→ {d.target_note}</span>}
                     </span>
                   </label>

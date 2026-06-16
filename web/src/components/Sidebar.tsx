@@ -1,8 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
 import clsx from "clsx";
+import { CalendarDays, Check, CircleCheck, Hash, Inbox, ListTodo, Search, Sun, type LucideIcon } from "lucide-react";
 import { useCounts, useProjects, useTags } from "../queries";
 
-function Item({ to, icon, label, count }: { to: string; icon: string; label: string; count?: number }) {
+function Item({ to, icon: Icon, label, count }: { to: string; icon: LucideIcon; label: string; count?: number }) {
   return (
     <NavLink
       to={to}
@@ -14,7 +15,7 @@ function Item({ to, icon, label, count }: { to: string; icon: string; label: str
         )
       }
     >
-      <span className="w-4 text-center opacity-80">{icon}</span>
+      <Icon className="size-4 shrink-0 opacity-80" />
       <span className="flex-1 truncate">{label}</span>
       {count != null && count > 0 && <span className="text-xs tabular-nums" style={{ color: "var(--color-text-3)" }}>{count}</span>}
     </NavLink>
@@ -34,16 +35,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex h-full flex-col gap-0.5 overflow-y-auto p-2.5" onClick={onNavigate}>
       <div className="flex items-center gap-2 px-2.5 py-2">
-        <span className="grid size-6 place-items-center rounded-md text-sm" style={{ background: "var(--color-accent)", color: "white" }}>✓</span>
+        <span className="grid size-6 place-items-center rounded-md" style={{ background: "var(--color-accent)", color: "white" }}><Check className="size-4" strokeWidth={3} /></span>
         <span className="text-sm font-semibold">Obsidian Todo</span>
       </div>
 
-      <Item to="/" icon="☀" label="Today" count={counts.data?.today} />
-      <Item to="/upcoming" icon="▤" label="Upcoming" count={counts.data?.upcoming} />
-      <Item to="/inbox" icon="✉" label="Inbox" count={counts.data?.inbox} />
-      <Item to="/all" icon="≣" label="All open" count={counts.data?.total_open} />
-      <Item to="/completed" icon="✓" label="Completed" />
-      <Item to="/search" icon="⌕" label="Search" />
+      <Item to="/" icon={Sun} label="Today" count={counts.data?.today} />
+      <Item to="/upcoming" icon={CalendarDays} label="Upcoming" count={counts.data?.upcoming} />
+      <Item to="/inbox" icon={Inbox} label="Inbox" count={counts.data?.inbox} />
+      <Item to="/all" icon={ListTodo} label="All open" count={counts.data?.total_open} />
+      <Item to="/completed" icon={CircleCheck} label="Completed" />
+      <Item to="/search" icon={Search} label="Search" />
 
       <SectionLabel>Projects</SectionLabel>
       {projects.data?.slice(0, 30).map((p) => (
@@ -55,7 +56,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             loc.search.includes(encodeURIComponent(p.path)) ? "bg-[var(--color-accent-soft)] text-[var(--color-text)]" : "text-[var(--color-text-2)] hover:bg-[var(--color-surface-2)]",
           )}
         >
-          <span className="w-4 text-center opacity-60">#</span>
+          <Hash className="size-4 shrink-0 opacity-60" />
           <span className="flex-1 truncate">{p.note}</span>
           <span className="text-xs tabular-nums" style={{ color: "var(--color-text-3)" }}>{p.open_count}</span>
         </NavLink>
@@ -66,7 +67,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <>
           <SectionLabel>Tags</SectionLabel>
           {tags.data.slice(0, 40).map((t) => (
-            <Item key={t.tag} to={`/tag/${encodeURIComponent(t.tag)}`} icon="⊙" label={`#${t.tag}`} count={t.count} />
+            <Item key={t.tag} to={`/tag/${encodeURIComponent(t.tag)}`} icon={Hash} label={`#${t.tag}`} count={t.count} />
           ))}
         </>
       )}
