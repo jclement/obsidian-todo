@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, useMotionValue, animate } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useDrag } from "@use-gesture/react";
 import clsx from "clsx";
 import type { Task } from "../types";
@@ -35,6 +35,9 @@ export function TaskRow({
   const openInObsidian = useOpenInObsidian();
   const [committing, setCommitting] = useState(false);
   const x = useMotionValue(0);
+  // Swipe backgrounds fill with color as the row is dragged (premium feel).
+  const doneBg = useTransform(x, [0, 90], ["rgba(26,158,96,0)", "rgba(26,158,96,0.18)"]);
+  const editBg = useTransform(x, [-90, 0], ["rgba(124,58,237,0.18)", "rgba(124,58,237,0)"]);
 
   const done = task.status === "done" || task.status === "cancelled";
   const doComplete = () => {
@@ -70,17 +73,20 @@ export function TaskRow({
 
   return (
     <div className="relative overflow-hidden">
-      {/* swipe action backgrounds */}
-      <div className="absolute inset-0 flex items-center justify-between px-5 text-sm font-medium">
+      {/* swipe action backgrounds (fill with color as the row is dragged) */}
+      <motion.div style={{ background: doneBg }} className="absolute inset-y-0 left-0 right-0 flex items-center px-5 text-sm font-medium">
         <span style={{ color: "var(--color-green)" }}>✓ Done</span>
+      </motion.div>
+      <motion.div style={{ background: editBg }} className="absolute inset-y-0 left-0 right-0 flex items-center justify-end px-5 text-sm font-medium">
         <span style={{ color: "var(--color-accent-2)" }}>Edit</span>
-      </div>
+      </motion.div>
 
       <div {...bind()} style={{ touchAction: "pan-y" }}>
       <motion.div
         style={{ x, background: "var(--color-surface)" }}
+        whileTap={{ scale: 0.985 }}
         className={clsx(
-          "group relative flex items-start gap-3 border-b px-3 py-2.5 sm:px-4",
+          "group relative flex items-start gap-3 border-b px-4 py-3 transition-colors active:bg-[var(--color-surface-2)] md:py-2.5 md:hover:bg-[var(--color-surface-2)]",
           committing && "opacity-50",
         )}
       >
@@ -91,7 +97,7 @@ export function TaskRow({
           aria-label="Complete task"
           title={`Status: [${task.status_char}]`}
           onClick={doComplete}
-          className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] border text-[0.65rem] font-bold leading-none transition-colors hover:border-[var(--color-accent)]"
+          className="relative mt-0.5 grid size-[22px] shrink-0 place-items-center rounded-[6px] border text-[0.65rem] font-bold leading-none transition-colors before:absolute before:-inset-2.5 hover:border-[var(--color-accent)] md:size-5"
           style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-2)" }}
         >
           {task.status === "done" ? "✓" : task.status === "cancelled" ? "✕" : task.status === "todo" ? "" : task.status_char}
@@ -101,13 +107,13 @@ export function TaskRow({
           <div className="flex items-center gap-2">
             {prio && <span title={prio.label} className="text-xs">{prio.glyph}</span>}
             <span
-              className={clsx("min-w-0 break-words text-[0.95rem] leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
+              className={clsx("min-w-0 break-words text-[1.0625rem] leading-[1.35] md:text-[0.95rem] md:leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
               style={{ color: task.status === "done" || task.status === "cancelled" ? "var(--color-text)" : "var(--color-text)", opacity: task.status === "done" || task.status === "cancelled" ? 0.55 : 1 }}
             >
               {desc ? <Inline text={desc} onWikilink={openInObsidian} /> : "(untitled)"}
             </span>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs" style={{ color: "var(--color-text-3)" }}>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.8125rem] md:text-xs" style={{ color: "var(--color-text-3)" }}>
             {task.due && (
               <span style={{ color: DUE_COLOR[dc] }} className="font-medium">
                 📅 {dueLabel(task.due)}
@@ -120,7 +126,7 @@ export function TaskRow({
             )}
             {task.subitems.length === 0 && task.notes && <span title="Has notes">🗒</span>}
             {tags.map((t) => (
-              <Link key={t} to={`/tag/${encodeURIComponent(t)}`} className="hover:text-[var(--color-accent-2)]" onClick={(e) => e.stopPropagation()}>
+              <Link key={t} to={`/tag/${encodeURIComponent(t)}`} className="inline-flex min-h-[28px] items-center hover:text-[var(--color-accent-2)]" onClick={(e) => e.stopPropagation()}>
                 #{t}
               </Link>
             ))}
@@ -128,7 +134,7 @@ export function TaskRow({
               <Link
                 to={`/project?path=${encodeURIComponent(task.path)}`}
                 onClick={(e) => e.stopPropagation()}
-                className="rounded-full px-1.5 py-0.5 hover:text-[var(--color-text)]"
+                className="inline-flex min-h-[28px] items-center rounded-full px-2 py-1 hover:text-[var(--color-text)]"
                 style={{ background: "var(--color-surface-3)" }}
               >
                 {task.source_note}

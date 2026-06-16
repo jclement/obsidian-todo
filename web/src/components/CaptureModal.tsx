@@ -40,7 +40,7 @@ export function CaptureModal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
         <Dialog.Content
-          className="safe-b fixed inset-x-0 bottom-0 z-50 mx-auto rounded-t-2xl border p-4 shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
+          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto rounded-t-2xl border p-4 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >

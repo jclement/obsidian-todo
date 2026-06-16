@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import { todayStr, obsidianUrl } from "./lib/format";
+import { useVisualViewport } from "./lib/useVisualViewport";
 import { useBootstrap } from "./queries";
 import { VaultNameDialog } from "./components/VaultNameDialog";
 import { AppContext } from "./app-context";
@@ -39,6 +40,7 @@ type CaptureMode = null | "single" | "bulk" | "voice";
 
 export function App() {
   const boot = useBootstrap();
+  useVisualViewport();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [capture, setCapture] = useState<CaptureMode>(null);
   const [aiOpen, setAiOpen] = useState(false);
@@ -113,27 +115,36 @@ export function App() {
 
   return (
     <AppContext.Provider value={{ vaultName, aiEnabled, openEditor: setEditing, openObsidian, captureTarget, setCaptureTarget }}>
-      <div className="flex h-full">
+      <div className="flex h-[100dvh] overflow-hidden">
         <aside className="hidden w-64 shrink-0 border-r md:block" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
           <Sidebar />
         </aside>
 
         {navOpen && (
           <div className="fixed inset-0 z-50 md:hidden" onClick={() => setNavOpen(false)}>
-            <div className="absolute inset-0 bg-black/50" />
-            <aside className="absolute inset-y-0 left-0 w-72 border-r" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <aside className="absolute inset-y-0 left-0 w-72 overflow-y-auto overscroll-contain border-r pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
               <Sidebar onNavigate={() => setNavOpen(false)} />
             </aside>
           </div>
         )}
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-3 border-b px-4 py-2.5" style={{ borderColor: "var(--color-border)" }}>
-            <button className="md:hidden" onClick={() => setNavOpen(true)} aria-label="Menu">☰</button>
+          <header
+            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl"
+            style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
+          >
+            <button
+              className="-ml-1.5 grid size-10 place-items-center rounded-lg active:bg-[var(--color-surface-2)] md:hidden"
+              onClick={() => setNavOpen(true)}
+              aria-label="Menu"
+            >
+              ☰
+            </button>
             <div className="flex-1" />
             <button
               onClick={() => setCapture("single")}
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white"
+              className="hidden items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white md:flex"
               style={{ background: "var(--color-accent)" }}
               title="New task (q)"
             >
@@ -163,7 +174,7 @@ export function App() {
             </div>
           )}
 
-          <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-3 pb-28 pt-4 sm:px-5 md:pb-8">
+          <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-[calc(var(--nav-h)+1.5rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] sm:px-5 md:pb-8">
             <Routes>
               <Route path="/" element={<TodayView />} />
               <Route path="/upcoming" element={<UpcomingView />} />
@@ -189,7 +200,7 @@ export function App() {
         </main>
       </div>
 
-      <MobileNav onAdd={() => setCapture("single")} />
+      <MobileNav onAdd={() => setCapture("single")} onVoice={() => setCapture("voice")} aiEnabled={aiEnabled} />
       <CaptureModal open={capture === "single"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onOpenAi={() => openAi()} targetNote={captureTarget} defaults={captureDefaults} />
       <BulkAddModal open={capture === "bulk"} onClose={() => setCapture(null)} targetNote={captureTarget} defaults={captureDefaults} />
       <VoiceModal open={capture === "voice"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onTranscript={(t) => { setCapture(null); openAi(t, true); }} />

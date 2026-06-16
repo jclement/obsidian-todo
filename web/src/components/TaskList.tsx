@@ -54,7 +54,7 @@ export function TaskList({
   if (!tasks.length) return null;
 
   return (
-    <div ref={containerRef} className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--color-border)" }}>
+    <div ref={containerRef} className="overflow-hidden rounded-2xl border shadow-[var(--shadow-card)]" style={{ borderColor: "var(--color-border)" }}>
       {tasks.map((t, i) => (
         <TaskRow key={`${t.path}:${t.line}`} task={t} vaultName={vaultName} selected={i === sel} onEdit={onEdit} showNote={showNote} />
       ))}
@@ -64,19 +64,27 @@ export function TaskList({
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed py-16 text-center" style={{ borderColor: "var(--color-border)" }}>
-      <div className="text-3xl opacity-30">✓</div>
-      <div className="text-sm" style={{ color: "var(--color-text-2)" }}>{title}</div>
-      {hint && <div className="text-xs" style={{ color: "var(--color-text-3)" }}>{hint}</div>}
+    <div className="animate-in flex flex-col items-center justify-center gap-3 py-20 text-center">
+      <div className="grid size-16 place-items-center rounded-full" style={{ background: "var(--color-accent-soft)" }}>
+        <span className="text-2xl" style={{ color: "var(--color-accent)" }}>✓</span>
+      </div>
+      <div className="text-base font-medium" style={{ color: "var(--color-text)" }}>{title}</div>
+      {hint && <div className="max-w-xs text-sm" style={{ color: "var(--color-text-3)" }}>{hint}</div>}
     </div>
   );
 }
 
 export function Loading() {
   return (
-    <div className="space-y-2">
+    <div className="overflow-hidden rounded-2xl border shadow-[var(--shadow-card)]" style={{ borderColor: "var(--color-border)" }}>
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-12 animate-pulse rounded-lg" style={{ background: "var(--color-surface)" }} />
+        <div key={i} className="flex items-start gap-3 border-b px-4 py-3.5 last:border-b-0">
+          <div className="size-[22px] shrink-0 animate-pulse rounded-md" style={{ background: "var(--color-surface-2)" }} />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-2/3 animate-pulse rounded" style={{ background: "var(--color-surface-2)" }} />
+            <div className="h-3 w-1/3 animate-pulse rounded" style={{ background: "var(--color-surface-2)" }} />
+          </div>
+        </div>
       ))}
     </div>
   );

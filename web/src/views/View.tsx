@@ -6,9 +6,9 @@ import type { Task } from "../types";
 export function Page({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <div className="animate-in">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <span className="text-xs" style={{ color: "var(--color-text-3)" }}>{subtitle}</span>}
+      <div className="mb-4 flex flex-col gap-0.5 md:flex-row md:items-baseline md:justify-between">
+        <h1 className="text-[1.625rem] font-bold tracking-tight md:text-xl md:font-semibold">{title}</h1>
+        {subtitle && <span className="text-[0.8125rem] md:text-xs" style={{ color: "var(--color-text-3)" }}>{subtitle}</span>}
       </div>
       {children}
     </div>

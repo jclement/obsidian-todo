@@ -4,8 +4,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --text-meta: 0.8125rem;   /* 13px chips/meta */
+  --text-row: 1.0625rem;    /* 17px task titles, mobile */
+  --text-h1: 1.625rem;      /* 26px page titles, mobile */
 }
 
 /*
@@ -39,15 +42,17 @@
   --color-amber: #b06a05;
   --color-green: #1a9e60;
   --color-blue: #2f7fd6;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06);
+  --nav-h: 4rem;
 }
 
 /* Dark theme. */
 .dark {
   color-scheme: dark;
   --color-bg: #16161a;
-  --color-surface: #1d1d22;
-  --color-surface-2: #242429;
-  --color-surface-3: #2c2c33;
+  --color-surface: #1f1f25;
+  --color-surface-2: #2a2a31;
+  --color-surface-3: #34343c;
   --color-border: #34343c;
   --color-border-strong: #43434d;
   --color-text: #e6e6ea;
@@ -60,6 +65,7 @@
   --color-amber: #f0a93b;
   --color-green: #45c08a;
   --color-blue: #5aa7f0;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.45);
 }
 
 html,
@@ -67,14 +73,42 @@ body,
 #root {
   height: 100%;
 }
+html {
+  background: var(--color-surface); /* notch/status-bar area matches the header */
+}
+#root {
+  height: 100dvh;
+  min-height: 100dvh;
+}
 
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* iOS zooms into any focused control whose font is < 16px. Force 16px on phones
+ * app-wide so focusing an input never triggers the zoom jump. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+.safe-t {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 * {
@@ -99,7 +133,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-in {
-  animation: fadeIn 0.12s ease-out;
+  animation: fadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Voice-capture mic pulse */

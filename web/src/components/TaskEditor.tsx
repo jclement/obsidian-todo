@@ -24,10 +24,10 @@ const PRIORITIES: { value: Priority; label: string }[] = [
 ];
 
 const field =
-  "w-full rounded-lg border bg-[var(--color-surface-2)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--color-accent)]";
+  "w-full rounded-lg border bg-[var(--color-surface-2)] px-3 py-2.5 text-base outline-none transition-colors focus:border-[var(--color-accent)] md:py-2 md:text-sm";
 const fieldStyle = { borderColor: "var(--color-border)" } as const;
 const noFill = { autoComplete: "off", "data-1p-ignore": true, "data-lpignore": "true", "data-form-type": "other" } as const;
-const lbl = "mb-1.5 block text-[0.7rem] font-medium uppercase tracking-wide";
+const lbl = "mb-1.5 block text-[0.75rem] font-medium uppercase tracking-wide md:text-[0.7rem]";
 const lblStyle = { color: "var(--color-text-3)" } as const;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -110,8 +110,9 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92vh] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+          className="fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto flex max-h-[min(92vh,calc(100dvh-var(--kb,0px)-1rem))] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[92vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
+          onFocusCapture={(e) => (e.target as HTMLElement).scrollIntoView?.({ block: "center", behavior: "smooth" })}
         >
           <Dialog.Title className="sr-only">Edit task</Dialog.Title>
 

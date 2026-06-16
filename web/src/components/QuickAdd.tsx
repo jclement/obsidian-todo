@@ -59,12 +59,12 @@ export const QuickAdd = forwardRef<
               if (e.key === "Escape") (e.target as HTMLInputElement).blur();
             }}
             placeholder={placeholder ?? "Add a task…  e.g. Fix OData 500 tomorrow #barreleye !!"}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-text-3)]"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[var(--color-text-3)] md:text-sm"
           />
           <button
             onClick={onOpenAi}
             title="Capture with AI / dictate"
-            className="grid size-9 shrink-0 place-items-center rounded-md border text-sm"
+            className="grid size-10 shrink-0 place-items-center rounded-lg border text-sm md:size-9"
             style={{ borderColor: "var(--color-border-strong)", color: aiEnabled ? "var(--color-accent-2)" : "var(--color-text-3)" }}
           >
             ✨
