@@ -111,7 +111,7 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
-          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto flex max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[92vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+          className="fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto flex max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[92vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
         >
           <Dialog.Title className="sr-only">Edit task</Dialog.Title>

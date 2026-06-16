@@ -104,14 +104,6 @@ body {
     font-size: 16px;
   }
 }
-.safe-t {
-  padding-top: env(safe-area-inset-top);
-}
-.safe-x {
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
@@ -123,10 +115,6 @@ body {
 *::-webkit-scrollbar-thumb {
   background: var(--color-border-strong);
   border-radius: 99px;
-}
-
-.safe-b {
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @keyframes fadeIn {

@@ -87,7 +87,7 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
   return (
     <nav
       ref={navRef}
-      className="safe-x fixed inset-x-0 bottom-0 z-40 flex select-none items-stretch border-t pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex select-none items-stretch border-t pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur-xl md:hidden"
       style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 85%, transparent)" }}
     >
       <Tab to="/" icon={Sun} label="Due" badge={counts.data?.today} />

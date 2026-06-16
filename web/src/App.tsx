@@ -134,7 +134,7 @@ export function App() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <header
-            className="safe-t safe-x sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-4 md:pt-5"
+            className="sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-4 md:pt-[max(1.5rem,env(safe-area-inset-top))]"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
             {/* Align the toolbar to the same column as the content below it. */}
@@ -181,7 +181,7 @@ export function App() {
             </div>
           )}
 
-          <div className="safe-x mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-[calc(var(--nav-h,4rem)+1rem)] [-webkit-overflow-scrolling:touch] sm:px-6 md:max-w-5xl md:px-8 md:pb-8">
+          <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-[calc(var(--nav-h,4rem)+1rem)] [-webkit-overflow-scrolling:touch] sm:px-6 md:max-w-5xl md:px-8 md:pb-8">
             <Routes>
               <Route path="/" element={<TodayView />} />
               <Route path="/upcoming" element={<UpcomingView />} />

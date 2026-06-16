@@ -36,7 +36,7 @@ export function CaptureModal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
         <Dialog.Content
-          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] overflow-y-auto rounded-t-2xl border p-5 pb-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:max-h-[85vh] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
+          className="fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] overflow-y-auto rounded-t-2xl border px-6 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] pt-6 shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:max-h-[85vh] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -48,7 +48,7 @@ export function CaptureModal({
             defaults={defaults}
             placeholder={placeholder}
           />
-          <p className="mt-4 border-t pt-3 text-xs" style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}>
+          <p className="mt-5 border-t pt-4 text-xs" style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}>
             <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">↵</kbd> adds another&nbsp;·&nbsp;
             <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">esc</kbd> to close&nbsp;·&nbsp;dates, #tags and !priority are parsed
           </p>
