@@ -140,8 +140,8 @@ export function TaskEditor({ task, onClose }: { task: Task | null; vaultName?: s
           </div>
 
           <div className="grid grid-cols-2 gap-3 px-5 pt-2">
-            <Field label="Due"><input type="date" {...noFill} value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field>
-            <Field label="Scheduled"><input type="date" {...noFill} value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field>
+            <div className="col-span-2 sm:col-span-1"><Field label="Due"><input type="date" {...noFill} value={due} onChange={(e) => setDue(e.target.value)} className={field} style={fieldStyle} /></Field></div>
+            <div className="col-span-2 sm:col-span-1"><Field label="Scheduled"><input type="date" {...noFill} value={scheduled} onChange={(e) => setScheduled(e.target.value)} className={field} style={fieldStyle} /></Field></div>
             <Field label="Status">
               <select value={statusChar} onChange={(e) => setStatusChar(e.target.value)} className={field} style={fieldStyle}>
                 {statuses.map((s, i) => (

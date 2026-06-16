@@ -101,7 +101,7 @@ export function TaskRow({
         style={{ x, background: "var(--color-surface)" }}
         whileTap={{ scale: 0.985 }}
         className={clsx(
-          "group relative flex items-start gap-3 border-b px-4 py-3 transition-colors active:bg-[var(--color-surface-2)] md:py-2.5 md:hover:bg-[var(--color-surface-2)]",
+          "group relative flex items-start gap-3 border-b px-4 py-3 transition-colors active:bg-[var(--color-surface-2)] md:py-1.5 md:hover:bg-[var(--color-surface-2)]",
           committing && "opacity-50",
         )}
       >
@@ -122,11 +122,11 @@ export function TaskRow({
           role="button"
           tabIndex={0}
           aria-label={`Edit: ${desc || "untitled"}`}
-          className="min-w-0 flex-1 cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="min-w-0 flex-1 cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:flex md:items-baseline md:gap-3"
           onClick={openEdit}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(); } }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 md:flex-1">
             {prio && <span title={prio.label} className="text-xs">{prio.glyph}</span>}
             <span
               className={clsx("min-w-0 break-words text-[1.0625rem] leading-[1.35] md:text-[0.95rem] md:leading-snug", (task.status === "done" || task.status === "cancelled") && "line-through")}
@@ -135,7 +135,7 @@ export function TaskRow({
               {desc ? <Inline text={desc} onWikilink={openInObsidian} /> : "(untitled)"}
             </span>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.8125rem] md:text-xs" style={{ color: "var(--color-text-3)" }}>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.8125rem] md:mt-0 md:shrink-0 md:flex-nowrap md:gap-x-4 md:text-xs" style={{ color: "var(--color-text-3)" }}>
             {task.due && (
               <span style={{ color: DUE_COLOR[dc] }} className="flex items-center gap-1 font-medium">
                 <Calendar className="size-3.5" /> {dueLabel(task.due)}
@@ -148,7 +148,7 @@ export function TaskRow({
             )}
             {task.subitems.length === 0 && task.notes && <span title="Has notes" className="flex items-center"><FileText className="size-3.5" /></span>}
             {tags.map((t) => (
-              <Link key={t} to={`/tag/${encodeURIComponent(t)}`} className="inline-flex min-h-[28px] items-center hover:text-[var(--color-accent-2)]" onClick={(e) => e.stopPropagation()}>
+              <Link key={t} to={`/tag/${encodeURIComponent(t)}`} className="inline-flex min-h-[28px] items-center hover:text-[var(--color-accent-2)] md:min-h-0" onClick={(e) => e.stopPropagation()}>
                 #{t}
               </Link>
             ))}
@@ -156,7 +156,7 @@ export function TaskRow({
               <Link
                 to={`/project?path=${encodeURIComponent(task.path)}`}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex min-h-[28px] items-center rounded-full px-2 py-1 hover:text-[var(--color-text)]"
+                className="inline-flex min-h-[28px] max-w-[40vw] items-center truncate rounded-full px-2 py-1 hover:text-[var(--color-text)] md:min-h-0 md:max-w-[14rem]"
                 style={{ background: "var(--color-surface-3)" }}
               >
                 {task.source_note}

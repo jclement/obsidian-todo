@@ -134,7 +134,7 @@ export function App() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <header
-            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl"
+            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:gap-4 md:px-6 md:pb-3"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
             <button
@@ -147,7 +147,7 @@ export function App() {
             <div className="flex-1" />
             <button
               onClick={() => setCapture("single")}
-              className="hidden items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
+              className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
               style={{ background: "var(--color-accent)" }}
               title="New task (q)"
             >
@@ -155,13 +155,13 @@ export function App() {
             </button>
             <button
               onClick={() => setPaletteOpen(true)}
-              className="hidden items-center gap-2 rounded-md border px-2.5 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex"
+              className="hidden items-center gap-2 rounded-lg border px-3 py-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex md:min-w-[12rem] md:justify-between"
               style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-3)" }}
             >
               <span>Search…</span>
-              <kbd className="rounded bg-[var(--color-surface-3)] px-1">⌘K</kbd>
+              <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">⌘K</kbd>
             </button>
-            <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="size-2 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
+            <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="ml-1 size-2.5 shrink-0 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
             <UserMenu name={vaultName} />
           </header>
 
@@ -177,7 +177,7 @@ export function App() {
             </div>
           )}
 
-          <div className="safe-x mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-[calc(var(--nav-h,4rem)+2.75rem)] [-webkit-overflow-scrolling:touch] sm:px-5 md:pb-8">
+          <div className="safe-x mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-[calc(var(--nav-h,4rem)+1rem)] [-webkit-overflow-scrolling:touch] sm:px-6 md:max-w-5xl md:px-8 md:pb-8">
             <Routes>
               <Route path="/" element={<TodayView />} />
               <Route path="/upcoming" element={<UpcomingView />} />

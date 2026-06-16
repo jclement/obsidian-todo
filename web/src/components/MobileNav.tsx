@@ -87,7 +87,7 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
   return (
     <nav
       ref={navRef}
-      className="safe-x fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+      className="safe-x fixed inset-x-0 bottom-0 z-40 flex select-none items-stretch border-t pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
       style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 85%, transparent)" }}
     >
       <Tab to="/" icon={Sun} label="Due" badge={counts.data?.today} />
@@ -101,8 +101,8 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
           onPointerCancel={cancel}
           onContextMenu={(e) => e.preventDefault()}
           aria-label={aiEnabled ? "Tap to add, hold to dictate" : "New task"}
-          className="absolute -top-7 grid size-14 place-items-center rounded-full text-white outline-none ring-4 ring-[var(--color-surface)] shadow-[0_8px_24px_rgba(124,58,237,.5)] focus-visible:ring-[var(--color-accent-2)]"
-          style={{ background: "linear-gradient(160deg, var(--color-accent), var(--color-accent-2))", touchAction: "none" }}
+          className="absolute -top-7 grid size-14 select-none place-items-center rounded-full text-white outline-none ring-4 ring-[var(--color-surface)] shadow-[0_8px_24px_rgba(124,58,237,.5)] focus-visible:ring-[var(--color-accent-2)]"
+          style={{ background: "linear-gradient(160deg, var(--color-accent), var(--color-accent-2))", touchAction: "none", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
         >
           <Plus className="size-7" strokeWidth={2.5} />
           {aiEnabled && (
