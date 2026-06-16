@@ -144,6 +144,25 @@ export function createApp(deps: AppDeps) {
   // by /api/admin above. Only setup/login/oauth-consent stay server-rendered.
   // Mounted last so every explicit route above wins. serveStatic falls through
   // to the index.html fallback when a path isn't a real file (client routes).
+
+  // The SW script and the HTML shell must always revalidate, so a redeploy is
+  // picked up immediately — otherwise a heuristically-cached shell can keep
+  // pointing at deleted, content-hashed assets. (The /static/* assets are
+  // immutable and stay cacheable, served by serveStatic below.)
+  app.get("/sw.js", (c) => {
+    const p = join(SPA_DIR, "sw.js");
+    if (!existsSync(p)) return c.text("Not found", 404);
+    c.header("Cache-Control", "no-cache");
+    c.header("Content-Type", "text/javascript; charset=utf-8");
+    return c.body(readFileSync(p));
+  });
+  app.get("/", (c) => {
+    const index = join(SPA_DIR, "index.html");
+    if (!existsSync(index)) return c.text("SPA not built. Run `mise run build`. In dev, open the Vite dev server.", 503);
+    c.header("Cache-Control", "no-cache");
+    return c.html(readFileSync(index, "utf8"));
+  });
+
   app.use("/*", serveStatic({ root: SPA_DIR }));
   app.get("/*", (c) => {
     // Only client-side ROUTES fall back to index.html. A request that looks like
@@ -151,7 +170,7 @@ export function createApp(deps: AppDeps) {
     // return HTML for it, or the browser gets text/html for a module script.
     if (/\.[a-z0-9]+$/i.test(c.req.path)) return c.text("Not found", 404);
     const index = join(SPA_DIR, "index.html");
-    if (existsSync(index)) return c.html(readFileSync(index, "utf8"));
+    if (existsSync(index)) { c.header("Cache-Control", "no-cache"); return c.html(readFileSync(index, "utf8")); }
     return c.text("SPA not built. Run `mise run build` (or `vite build`). In dev, open the Vite dev server.", 503);
   });
 

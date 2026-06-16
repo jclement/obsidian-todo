@@ -19,7 +19,24 @@ const queryClient = new QueryClient({
 connectLiveSync(queryClient);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  // Auto-heal stale shells: when a freshly-deployed SW takes control, reload so
+  // the page swaps the cached index.html (which may point at deleted, content-
+  // hashed assets) for the current one. Guard on `hadController` so the very
+  // first install (no prior controller) doesn't trigger a needless reload, and
+  // on `refreshing` so we reload at most once.
+  const hadController = !!navigator.serviceWorker.controller;
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing || !hadController) return;
+    refreshing = true;
+    window.location.reload();
+  });
+  window.addEventListener("load", () =>
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => reg.update().catch(() => {})) // check for a new SW every load
+      .catch(() => {}),
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
