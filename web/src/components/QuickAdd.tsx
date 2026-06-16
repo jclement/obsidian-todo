@@ -1,5 +1,5 @@
 import { forwardRef, useMemo, useState } from "react";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { parseQuickAdd } from "../lib/quickAddParse";
 import { useAdd } from "../queries";
 
@@ -15,14 +15,12 @@ export const QuickAdd = forwardRef<
   HTMLInputElement,
   {
     targetNote?: string;
-    aiEnabled: boolean;
-    onOpenAi: () => void;
     autoFocus?: boolean;
     onSubmitted?: () => void;
     defaults?: { due?: string; tag?: string };
     placeholder?: string;
   }
->(function QuickAdd({ targetNote, aiEnabled, onOpenAi, autoFocus, onSubmitted, defaults, placeholder }, ref) {
+>(function QuickAdd({ targetNote, autoFocus, onSubmitted, defaults, placeholder }, ref) {
     const [text, setText] = useState("");
     const add = useAdd();
     const { draft, chips } = useMemo(() => parseQuickAdd(text), [text]);
@@ -62,18 +60,6 @@ export const QuickAdd = forwardRef<
             placeholder={placeholder ?? "Add a task…  e.g. Fix OData 500 tomorrow #barreleye !!"}
             className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[var(--color-text-3)] md:text-[0.95rem]"
           />
-          <button
-            onClick={onOpenAi}
-            title="Capture with AI / dictate (a)"
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-            style={{
-              borderColor: aiEnabled ? "transparent" : "var(--color-border-strong)",
-              color: aiEnabled ? "var(--color-accent-2)" : "var(--color-text-3)",
-              background: aiEnabled ? "var(--color-accent-soft)" : "transparent",
-            }}
-          >
-            <Sparkles className="size-4" /> AI
-          </button>
         </div>
         {(chips.length > 0 || inheritDue || inheritTag) && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">

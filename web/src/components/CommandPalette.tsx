@@ -13,14 +13,12 @@ export function CommandPalette({
   onNewTask,
   onBulkAdd,
   onVoice,
-  onAiCapture,
 }: {
   open: boolean;
   onClose: () => void;
   onNewTask: () => void;
   onBulkAdd: () => void;
   onVoice: () => void;
-  onAiCapture: () => void;
 }) {
   const navigate = useNavigate();
   const projects = useProjects();
@@ -55,7 +53,6 @@ export function CommandPalette({
           <Item onSelect={() => run(onNewTask)}>New task <kbd className="ml-auto opacity-50">q</kbd></Item>
           <Item onSelect={() => run(onBulkAdd)}>Bulk add <kbd className="ml-auto opacity-50">b</kbd></Item>
           <Item onSelect={() => run(onVoice)}>Voice add <kbd className="ml-auto opacity-50">v</kbd></Item>
-          <Item onSelect={() => run(onAiCapture)}>Capture with AI <kbd className="ml-auto opacity-50">a</kbd></Item>
           <Item onSelect={() => run(async () => { await api.reindex(); toast("Reindexing…", "info"); })}>Reindex vault</Item>
         </Command.Group>
 

@@ -10,15 +10,11 @@ let cursor = Math.floor(performance.now()) % SAMPLE_TASKS.length;
 export function CaptureModal({
   open,
   onClose,
-  aiEnabled,
-  onOpenAi,
   targetNote,
   defaults,
 }: {
   open: boolean;
   onClose: () => void;
-  aiEnabled: boolean;
-  onOpenAi: () => void;
   targetNote?: string;
   defaults?: { due?: string; tag?: string };
 }) {
@@ -48,11 +44,9 @@ export function CaptureModal({
           <div aria-hidden className="mx-auto mb-4 h-1 w-9 rounded-full sm:hidden" style={{ background: "var(--color-border-strong)" }} />
           <QuickAdd
             autoFocus
-            aiEnabled={aiEnabled}
             targetNote={targetNote}
             defaults={defaults}
             placeholder={placeholder}
-            onOpenAi={() => { onClose(); onOpenAi(); }}
           />
           <p className="mt-4 border-t pt-3 text-xs" style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}>
             <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">↵</kbd> adds another&nbsp;·&nbsp;

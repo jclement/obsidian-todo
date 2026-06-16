@@ -16,7 +16,6 @@ import { HelpDialog } from "./components/HelpDialog";
 import { CaptureModal } from "./components/CaptureModal";
 import { BulkAddModal } from "./components/BulkAddModal";
 import { VoiceModal } from "./components/VoiceModal";
-import { AiCaptureDialog } from "./components/AiCaptureDialog";
 import { TaskEditor } from "./components/TaskEditor";
 import { Toaster } from "./components/Toaster";
 import { TodayView } from "./views/TodayView";
@@ -47,9 +46,8 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [capture, setCapture] = useState<CaptureMode>(null);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiInitial, setAiInitial] = useState("");
-  const [aiAuto, setAiAuto] = useState(false);
+  // Bulk-add seed: voice drops a transcript here and asks AI to clean it up.
+  const [bulkSeed, setBulkSeed] = useState<{ text: string; autoClean: boolean }>({ text: "", autoClean: false });
   const [editing, setEditing] = useState<Task | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [live, setLive] = useState<"connected" | "reconnecting">("reconnecting");
@@ -65,10 +63,10 @@ export function App() {
     return {};
   }, [loc.pathname]);
 
-  const openAi = useCallback((initial = "", auto = false) => {
-    setAiInitial(initial);
-    setAiAuto(auto);
-    setAiOpen(true);
+  // Quick (q) opens an empty bulk add; voice routes its transcript through here.
+  const openBulk = useCallback((text = "", autoClean = false) => {
+    setBulkSeed({ text, autoClean });
+    setCapture("bulk");
   }, []);
 
   const openObsidian = useCallback(
@@ -86,7 +84,7 @@ export function App() {
     return () => window.removeEventListener("live:status", onStatus);
   }, []);
 
-  // Keyboard: ⌘K palette · q single · b bulk · v voice · a AI.
+  // Keyboard: ⌘K palette · q single · b bulk · v voice.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typing =
@@ -100,15 +98,14 @@ export function App() {
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "/") { e.preventDefault(); setPaletteOpen(true); return; } // global search
       if (e.key === "?") { e.preventDefault(); setHelpOpen((o) => !o); return; } // shortcuts help
-      if (capture || aiOpen) return; // a capture modal is already open
+      if (capture) return; // a capture modal is already open
       if (e.key === "q") { e.preventDefault(); setCapture("single"); }
-      else if (e.key === "b") { e.preventDefault(); setCapture("bulk"); }
+      else if (e.key === "b") { e.preventDefault(); openBulk(); }
       else if (e.key === "v") { e.preventDefault(); setCapture("voice"); }
-      else if (e.key === "a") { e.preventDefault(); openAi(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openAi, capture, aiOpen]);
+  }, [openBulk, capture]);
 
   const settings = boot.data?.settings;
   const vaultName = boot.data?.vaultName ?? "Vault";
@@ -137,7 +134,7 @@ export function App() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <header
-            className="safe-t safe-x sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-3 md:pt-3"
+            className="safe-t safe-x sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-4 md:pt-5"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
             {/* Align the toolbar to the same column as the content below it. */}
@@ -226,11 +223,10 @@ export function App() {
       </div>
 
       <MobileNav onAdd={() => setCapture("single")} onVoice={() => setCapture("voice")} aiEnabled={aiEnabled} />
-      <CaptureModal open={capture === "single"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onOpenAi={() => openAi()} targetNote={captureTarget} defaults={captureDefaults} />
-      <BulkAddModal open={capture === "bulk"} onClose={() => setCapture(null)} targetNote={captureTarget} defaults={captureDefaults} />
-      <VoiceModal open={capture === "voice"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onTranscript={(t) => { setCapture(null); openAi(t, true); }} />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={() => setCapture("single")} onBulkAdd={() => setCapture("bulk")} onVoice={() => setCapture("voice")} onAiCapture={() => openAi()} />
-      <AiCaptureDialog open={aiOpen} onClose={() => setAiOpen(false)} aiEnabled={aiEnabled} initialText={aiInitial} autoProcess={aiAuto} />
+      <CaptureModal open={capture === "single"} onClose={() => setCapture(null)} targetNote={captureTarget} defaults={captureDefaults} />
+      <BulkAddModal open={capture === "bulk"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} initialText={bulkSeed.text} autoClean={bulkSeed.autoClean} targetNote={captureTarget} defaults={captureDefaults} />
+      <VoiceModal open={capture === "voice"} onClose={() => setCapture(null)} aiEnabled={aiEnabled} onTranscript={(t) => openBulk(t, true)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNewTask={() => setCapture("single")} onBulkAdd={() => openBulk()} onVoice={() => setCapture("voice")} />
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
       {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
       <VaultNameDialog path={obsidianPath} defaultName={vaultName} onClose={() => setObsidianPath(null)} />

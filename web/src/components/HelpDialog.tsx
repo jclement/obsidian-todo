@@ -5,10 +5,9 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
   {
     title: "Capture",
     keys: [
-      ["q", "Quick add"],
+      ["q", "Quick add (single)"],
       ["b", "Bulk add (one per line)"],
       ["v", "Voice capture"],
-      ["a", "Capture with AI"],
     ],
   },
   {

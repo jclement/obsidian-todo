@@ -6,7 +6,8 @@ import { toast } from "../toast";
 
 /**
  * Voice capture (key `v`). Opens straight into recording with a big throbbing
- * mic; on stop it transcribes (Whisper) and hands the text to AI capture.
+ * mic; on stop it transcribes (Whisper) and hands the text to bulk add (which
+ * AI-cleans it into one task per line for review).
  */
 export function VoiceModal({
   open,
@@ -44,12 +45,18 @@ export function VoiceModal({
           try {
             const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
             const text = await api.transcribe(blob);
-            if (text) onTranscript(text);
-            else toast("Didn't catch that", "info");
-          } catch (e) {
-            toast(e instanceof Error ? e.message : "Transcription failed", "error");
-          } finally {
             setState("idle");
+            if (text) {
+              // Hand off to bulk add — the parent switches modes, so DON'T also
+              // call onClose() (that would clear the mode we just opened).
+              onTranscript(text);
+              return;
+            }
+            toast("Didn't catch that", "info");
+            onClose();
+          } catch (e) {
+            setState("idle");
+            toast(e instanceof Error ? e.message : "Transcription failed", "error");
             onClose();
           }
         };
