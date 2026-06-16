@@ -40,12 +40,12 @@ export function CaptureModal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
         <Dialog.Content
-          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] overflow-y-auto rounded-t-2xl border p-4 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:max-h-[85vh] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
+          className="safe-x fixed inset-x-0 bottom-[var(--kb,0px)] z-50 mx-auto max-h-[calc(var(--vvh,100dvh)-env(safe-area-inset-top)-1rem)] overflow-y-auto rounded-t-2xl border p-5 pb-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] shadow-2xl outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-[18%] sm:max-h-[85vh] sm:w-[min(92vw,38rem)] sm:-translate-x-1/2 sm:rounded-2xl"
           style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Dialog.Title className="sr-only">New task</Dialog.Title>
-          <div aria-hidden className="mx-auto mb-3 h-1 w-9 rounded-full sm:hidden" style={{ background: "var(--color-border-strong)" }} />
+          <div aria-hidden className="mx-auto mb-4 h-1 w-9 rounded-full sm:hidden" style={{ background: "var(--color-border-strong)" }} />
           <QuickAdd
             autoFocus
             aiEnabled={aiEnabled}
@@ -54,8 +54,9 @@ export function CaptureModal({
             placeholder={placeholder}
             onOpenAi={() => { onClose(); onOpenAi(); }}
           />
-          <p className="mt-2 px-1 text-xs" style={{ color: "var(--color-text-3)" }}>
-            Enter adds another · Esc to close · dates, #tags and ! priority are parsed
+          <p className="mt-4 border-t pt-3 text-xs" style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}>
+            <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">↵</kbd> adds another&nbsp;·&nbsp;
+            <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">esc</kbd> to close&nbsp;·&nbsp;dates, #tags and !priority are parsed
           </p>
         </Dialog.Content>
       </Dialog.Portal>

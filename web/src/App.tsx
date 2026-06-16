@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { Menu, Plus } from "lucide-react";
@@ -12,6 +12,7 @@ import { Sidebar } from "./components/Sidebar";
 import { MobileNav } from "./components/MobileNav";
 import { UserMenu } from "./components/UserMenu";
 import { CommandPalette } from "./components/CommandPalette";
+import { HelpDialog } from "./components/HelpDialog";
 import { CaptureModal } from "./components/CaptureModal";
 import { BulkAddModal } from "./components/BulkAddModal";
 import { VoiceModal } from "./components/VoiceModal";
@@ -44,6 +45,7 @@ export function App() {
   const boot = useBootstrap();
   useVisualViewport();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [capture, setCapture] = useState<CaptureMode>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiInitial, setAiInitial] = useState("");
@@ -97,6 +99,7 @@ export function App() {
       }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "/") { e.preventDefault(); setPaletteOpen(true); return; } // global search
+      if (e.key === "?") { e.preventDefault(); setHelpOpen((o) => !o); return; } // shortcuts help
       if (capture || aiOpen) return; // a capture modal is already open
       if (e.key === "q") { e.preventDefault(); setCapture("single"); }
       else if (e.key === "b") { e.preventDefault(); setCapture("bulk"); }
@@ -134,35 +137,39 @@ export function App() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <header
-            className="safe-t safe-x sticky top-0 z-30 flex items-center gap-3 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:gap-4 md:px-6 md:pb-4 md:pt-4"
+            className="safe-t safe-x sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-3 md:pt-3"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
-            <button
-              className="-ml-1.5 grid size-11 place-items-center rounded-lg outline-none active:bg-[var(--color-surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:hidden"
-              onClick={() => setNavOpen(true)}
-              aria-label="Menu"
-            >
-              <Menu className="size-5" />
-            </button>
-            <div className="flex-1" />
-            <button
-              onClick={() => setCapture("single")}
-              className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
-              style={{ background: "var(--color-accent)" }}
-              title="New task (q)"
-            >
-              <Plus className="size-4" /> Add
-            </button>
-            <button
-              onClick={() => setPaletteOpen(true)}
-              className="hidden items-center gap-2 rounded-lg border px-3 py-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex md:min-w-[12rem] md:justify-between"
-              style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-3)" }}
-            >
-              <span>Search…</span>
-              <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5">⌘K</kbd>
-            </button>
-            <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="ml-1 size-2.5 shrink-0 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
-            <UserMenu name={vaultName} />
+            {/* Align the toolbar to the same column as the content below it. */}
+            <div className="mx-auto flex w-full max-w-5xl items-center gap-3">
+              <button
+                className="-ml-1.5 grid size-11 place-items-center rounded-lg outline-none active:bg-[var(--color-surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:hidden"
+                onClick={() => setNavOpen(true)}
+                aria-label="Menu"
+              >
+                <Menu className="size-5" />
+              </button>
+              {/* Search: fills the left of the toolbar on desktop, hidden on phones. */}
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="hidden items-center gap-2 rounded-lg border px-3 py-2 text-sm outline-none transition-colors hover:border-[var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex md:w-72 md:justify-between"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}
+              >
+                <span>Search tasks…</span>
+                <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5 text-xs">⌘K</kbd>
+              </button>
+              <div className="flex-1" />
+              <button
+                onClick={() => setCapture("single")}
+                className="hidden items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
+                style={{ background: "var(--color-accent)" }}
+                title="New task (q)"
+              >
+                <Plus className="size-4" /> Add
+              </button>
+              <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="mx-1 size-2.5 shrink-0 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
+              <UserMenu name={vaultName} />
+            </div>
           </header>
 
           {syncDown && (
@@ -200,6 +207,21 @@ export function App() {
               </Route>
             </Routes>
           </div>
+
+          {/* Subtle desktop shortcut strip; ? opens the full list. */}
+          <footer
+            className="hidden shrink-0 items-center justify-center gap-4 border-t px-6 py-1.5 text-[0.7rem] md:flex"
+            style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)", background: "var(--color-surface)" }}
+          >
+            <FooterKey k="q" label="add" />
+            <FooterKey k="/" label="search" />
+            <FooterKey k="j k" label="move" />
+            <FooterKey k="x" label="done" />
+            <FooterKey k="e" label="edit" />
+            <button onClick={() => setHelpOpen(true)} className="flex items-center gap-1.5 rounded outline-none hover:text-[var(--color-text-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
+              <FooterKbd>?</FooterKbd> shortcuts
+            </button>
+          </footer>
         </main>
       </div>
 
@@ -212,8 +234,25 @@ export function App() {
       <TaskEditor task={editing} vaultName={vaultName} onClose={() => setEditing(null)} />
       {settings && !settings.onboarded && <Wizard settings={settings} mcpUrl={location.origin + "/mcp"} />}
       <VaultNameDialog path={obsidianPath} defaultName={vaultName} onClose={() => setObsidianPath(null)} />
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <Toaster />
       </MotionConfig>
     </AppContext.Provider>
+  );
+}
+
+function FooterKbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="rounded px-1 py-0.5 text-[0.7rem] font-medium" style={{ background: "var(--color-surface-3)", color: "var(--color-text-2)" }}>
+      {children}
+    </kbd>
+  );
+}
+
+function FooterKey({ k, label }: { k: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <FooterKbd>{k}</FooterKbd> {label}
+    </span>
   );
 }

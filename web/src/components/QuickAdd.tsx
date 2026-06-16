@@ -47,9 +47,9 @@ export const QuickAdd = forwardRef<
     };
 
     return (
-      <div className="rounded-xl border" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}>
-        <div className="flex items-center gap-2 px-3 py-2">
-          <Plus className="size-4 shrink-0" style={{ color: "var(--color-accent)" }} />
+      <div>
+        <div className="flex items-center gap-3">
+          <Plus className="size-5 shrink-0" style={{ color: "var(--color-accent)" }} />
           <input
             ref={ref}
             autoFocus={autoFocus}
@@ -60,19 +60,23 @@ export const QuickAdd = forwardRef<
               if (e.key === "Escape") (e.target as HTMLInputElement).blur();
             }}
             placeholder={placeholder ?? "Add a task…  e.g. Fix OData 500 tomorrow #barreleye !!"}
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[var(--color-text-3)] md:text-sm"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[var(--color-text-3)] md:text-[0.95rem]"
           />
           <button
             onClick={onOpenAi}
-            title="Capture with AI / dictate"
-            className="grid size-10 shrink-0 place-items-center rounded-lg border md:size-9"
-            style={{ borderColor: "var(--color-border-strong)", color: aiEnabled ? "var(--color-accent-2)" : "var(--color-text-3)" }}
+            title="Capture with AI / dictate (a)"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            style={{
+              borderColor: aiEnabled ? "transparent" : "var(--color-border-strong)",
+              color: aiEnabled ? "var(--color-accent-2)" : "var(--color-text-3)",
+              background: aiEnabled ? "var(--color-accent-soft)" : "transparent",
+            }}
           >
-            <Sparkles className="size-4" />
+            <Sparkles className="size-4" /> AI
           </button>
         </div>
         {(chips.length > 0 || inheritDue || inheritTag) && (
-          <div className="flex flex-wrap items-center gap-1.5 border-t px-3 py-2 text-xs" style={{ borderColor: "var(--color-border)" }}>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
             {chips.map((c, i) => (
               <span key={i} className="rounded-full px-2 py-0.5" style={{ background: "var(--color-surface-3)", color: CHIP_COLOR[c.kind] }}>
                 {c.label}
