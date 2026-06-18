@@ -20,6 +20,7 @@ import {
 import { createApiToken, listApiTokens, revokeApiToken } from "../../auth/tokens.ts";
 import { listConnections, revokeClient } from "../../oauth/router.ts";
 import { counts } from "../../index/queries.ts";
+import { safeWritePath, VaultPathError } from "../../vault/paths.ts";
 import { readTasksPluginConfig } from "../../vault/tasks-plugin.ts";
 import { ALL_SYNC_CONFIGS, obInstalled, obListRemoteVaults, obLogin, obLogout, obSyncConfig, obSyncSetup, obSyncUnlink } from "../../sync/ob.ts";
 
@@ -138,13 +139,24 @@ export function adminApiRouter() {
   });
   app.post("/snapshots/restore", async (c) => {
     const { db, taskCtx } = deps(c);
-    const { sha, path } = await c.req.json();
-    if (!sha || !path) return c.json({ error: "sha and path required" }, 400);
+    const body = await c.req.json();
+    const sha = String(body.sha ?? "");
+    // Constrain `sha` to a hex object id (so it can't smuggle a tree-ish like
+    // "HEAD:../x" into `git show`) and route `path` through the SAME chokepoint
+    // every other write uses — rejects .., absolute paths, and .obsidian/.git/
+    // .trash, so a restore can only read+write a real vault file.
+    if (!/^[0-9a-f]{7,40}$/i.test(sha)) return c.json({ error: "bad sha" }, 400);
+    let path: string;
+    try {
+      path = safeWritePath(String(body.path ?? ""));
+    } catch (e) {
+      return c.json({ error: e instanceof VaultPathError ? e.message : "bad path" }, 400);
+    }
     const content = await taskCtx.snapshotter.fileAt(sha, path);
     if (content === null) return c.json({ error: "File not found at that snapshot" }, 404);
     await taskCtx.store.write(path, content);
-    await taskCtx.snapshotter.commit(`restore: ${path} from ${String(sha).slice(0, 7)}`);
-    recordAdmin(db, "snapshot.restore", { target: path, detail: `from ${String(sha).slice(0, 7)}` });
+    await taskCtx.snapshotter.commit(`restore: ${path} from ${sha.slice(0, 7)}`);
+    recordAdmin(db, "snapshot.restore", { target: path, detail: `from ${sha.slice(0, 7)}` });
     taskCtx.indexer.reindexAndBroadcast(path);
     return c.json({ ok: true });
   });

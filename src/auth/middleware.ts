@@ -35,12 +35,16 @@ export function resolveOriginMiddleware(config: Config): MiddlewareHandler<AuthE
   };
 }
 
-export function securityHeaders(): MiddlewareHandler {
+export function securityHeaders(): MiddlewareHandler<AuthEnv> {
   return async (c, next) => {
     await next();
     c.header("X-Content-Type-Options", "nosniff");
     c.header("X-Frame-Options", "DENY");
     c.header("Referrer-Policy", "no-referrer");
+    // Runs after resolveOriginMiddleware (post-next), so secureCookies is set.
+    // Tell browsers to pin https for this host once we're served over TLS — it
+    // closes the http-downgrade window for an app reached over the public net.
+    if (c.var.secureCookies) c.header("Strict-Transport-Security", "max-age=31536000");
     if (c.req.path.startsWith("/app") || c.req.path === "/login" || c.req.path.startsWith("/setup") || c.req.path.startsWith("/oauth/authorize")) {
       c.header(
         "Content-Security-Policy",
@@ -157,6 +161,15 @@ interface Bucket {
 }
 
 const buckets = new Map<string, Bucket>();
+let lastSweep = 0;
+
+// Drop idle buckets so a flood of distinct (possibly spoofed) client IPs can't
+// grow the map without bound. Cheap: at most once a minute.
+function sweepBuckets(now: number) {
+  if (now - lastSweep < 60_000) return;
+  lastSweep = now;
+  for (const [k, b] of buckets) if (now - b.last > 600_000) buckets.delete(k);
+}
 
 export function rateLimit(name: string, perMinute: number): MiddlewareHandler {
   return async (c, next) => {
@@ -166,6 +179,7 @@ export function rateLimit(name: string, perMinute: number): MiddlewareHandler {
       "local";
     const key = `${name}:${ip}`;
     const now = Date.now();
+    sweepBuckets(now);
     let b = buckets.get(key);
     if (!b) {
       b = { tokens: perMinute, last: now };

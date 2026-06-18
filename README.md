@@ -50,6 +50,17 @@ mise run docker:build   # single container (server + SPA + obsidian-headless)
 
 The container serves the SPA, the JSON API, and the MCP endpoint behind one port; put it behind your usual tunnel (Cloudflare/gatecrash). See `deploy/` for compose examples.
 
+### Securing a public deployment
+
+The whole app (SPA, `/api`, `/mcp`) is behind auth — passkeys for the UI, hashed bearer/OAuth tokens for MCP — and there is no unauthenticated route that returns data or touches the vault. To keep it that way when exposing it to the internet:
+
+- **Set `PUBLIC_URL=https://your-host`.** This pins the origin (so a spoofed `Host`/`X-Forwarded-Host` can't poison auth/CSRF), forces `Secure` cookies, and enables strict host rejection. Deriving the origin from forwarded headers is only safe for localhost/dev.
+- **Terminate TLS at the tunnel/proxy and never publish the app port (3000)** to the internet — only the tunnel should reach it (the compose files already do this).
+- **Ensure the proxy *sets* (not passes through) `X-Forwarded-Host` / `X-Forwarded-Proto`** — Cloudflare and gatecrash do.
+- **Complete first-run `/setup` (register your passkey) promptly.** Setup locks itself once a passkey exists; don't leave a fresh, un-set-up instance publicly reachable.
+- **Never run with `AUTH_RESET=1` in production** — it wipes passkeys and re-opens setup (it's a local recovery escape hatch).
+- HSTS is sent automatically over HTTPS. A tighter Content-Security-Policy and a trusted-proxy allowlist for rate-limiting are reasonable additional hardening (see code comments).
+
 ## Task format
 
 Standard Obsidian Tasks **emoji** format, gated by a global filter (default `#task`):

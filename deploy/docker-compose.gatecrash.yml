@@ -8,8 +8,11 @@
 # 2. docker compose up -d
 # 3. docker compose logs app   ← grab the setup token, open https://<your-host>/setup
 #
-# PUBLIC_URL is optional: the app derives its public origin from the tunnel's
-# forwarded headers. Set it only to hard-pin the hostname.
+# SET PUBLIC_URL for any public deployment (below). It pins the origin so the
+# Host header can't be spoofed, forces Secure cookies, and enables strict host
+# rejection. Leaving it unset (deriving the origin from forwarded headers) is
+# only safe for localhost/dev. The app port (3000) is never published here —
+# only the tunnel reaches it.
 
 services:
   app:
@@ -19,8 +22,8 @@ services:
     # build: { context: .., dockerfile: Dockerfile }
     restart: unless-stopped
     stop_grace_period: 30s
-    # environment:
-    #   PUBLIC_URL: https://notes.example.com   # optional override
+    environment:
+      PUBLIC_URL: https://notes.example.com   # ← set to your real https hostname
     volumes:
       - ./data:/data
 
