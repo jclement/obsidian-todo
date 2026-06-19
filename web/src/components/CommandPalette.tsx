@@ -57,7 +57,7 @@ export function CommandPalette({
         </Command.Group>
 
         <Command.Group heading="Go to" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-[var(--color-text-3)]">
-          <Item onSelect={() => go("/")}><Sun className={ico} /> Today</Item>
+          <Item onSelect={() => go("/")}><Sun className={ico} /> Due</Item>
           <Item onSelect={() => go("/upcoming")}><CalendarDays className={ico} /> Upcoming</Item>
           <Item onSelect={() => go("/inbox")}><Inbox className={ico} /> Inbox</Item>
           <Item onSelect={() => go("/all")}><ListTodo className={ico} /> All open</Item>

@@ -81,6 +81,9 @@ export function apiRouter(ctx: TaskAppContext, db: Database, config: Config, syn
     const view = q.view;
     const s = ctx.getSettings();
     if (view === "today") return c.json({ tasks: viewToday(db, ctx.now()) });
+    // "due" — every open task with a due date, ordered by due (the SPA groups it
+    // into Overdue / Due Today / per-day sections).
+    if (view === "due") return c.json({ tasks: queryTasks(db, { has_due: true }) });
     if (view === "upcoming") return c.json({ tasks: viewUpcoming(db, q.days ? parseInt(q.days, 10) : 7, ctx.now()) });
     if (view === "inbox") return c.json({ tasks: viewInbox(db, s.inboxNote) });
     if (view === "completed") return c.json({ tasks: viewCompleted(db) });

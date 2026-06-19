@@ -39,7 +39,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span className="text-sm font-semibold">Obsidian Todo</span>
       </div>
 
-      <Item to="/" icon={Sun} label="Today" count={counts.data?.today} />
+      <Item to="/" icon={Sun} label="Due" count={counts.data?.today} />
       <Item to="/upcoming" icon={CalendarDays} label="Upcoming" count={counts.data?.upcoming} />
       <Item to="/inbox" icon={Inbox} label="Inbox" count={counts.data?.inbox} />
       <Item to="/all" icon={ListTodo} label="All open" count={counts.data?.total_open} />
