@@ -191,15 +191,30 @@ export function listTags(db: Database): TagSummary[] {
 
 export interface Counts {
   today: number;
-  upcoming: number;
+  /** Open tasks with a due date split for the segmented "Due" badge. */
+  overdue: number;
+  due_today: number;
+  due_later: number;
   inbox: number;
   total_open: number;
 }
 
 export function counts(db: Database, inboxNote: string, now = new Date()): Counts {
+  const today = todayYmd(now);
+  const dueN = (cmp: string, arg: string) =>
+    db
+      .query<{ n: number }, [string]>(
+        `SELECT COUNT(*) n FROM tasks WHERE status IN ('todo','in_progress','other') AND due IS NOT NULL AND due ${cmp} ?`,
+      )
+      .get(arg)?.n ?? 0;
+  const overdue = dueN("<", today);
+  const due_today = dueN("=", today);
+  const due_later = dueN(">", today);
   return {
-    today: viewToday(db, now).length,
-    upcoming: viewUpcoming(db, 7, now).length,
+    today: overdue + due_today,
+    overdue,
+    due_today,
+    due_later,
     inbox: viewInbox(db, inboxNote).length,
     total_open: (db.query<{ n: number }, []>("SELECT COUNT(*) n FROM tasks WHERE status IN ('todo','in_progress','other')").get()?.n) ?? 0,
   };

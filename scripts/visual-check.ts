@@ -30,7 +30,7 @@ const settings = {
   notifyHour: 8, notifyEnabled: false, statuses: STATUSES, syncMode: "obsidian", onboarded: true,
 };
 
-const counts = { today: 3, upcoming: 5, inbox: 2, total_open: 11 };
+const counts = { today: 3, overdue: 2, due_today: 1, due_later: 4, inbox: 2, total_open: 11 };
 
 let n = 0;
 const task = (o: Partial<any>) => ({
@@ -81,7 +81,7 @@ function mock(route: Route) {
 }
 
 const SCREENS: [string, string][] = [
-  ["today", "/"], ["upcoming", "/upcoming"], ["inbox", "/inbox"], ["all", "/all"],
+  ["today", "/"], ["inbox", "/inbox"], ["all", "/all"],
   ["completed", "/completed"], ["tags", "/tags"], ["settings", "/settings"],
 ];
 
@@ -98,15 +98,6 @@ for (const [vp, w, h] of VIEWPORTS) {
   for (const [name, path] of SCREENS) {
     await page.goto(BASE + path, { waitUntil: "networkidle" });
     await page.waitForTimeout(350);
-    if (name === "today" && vp === "desktop") {
-      const pad = await page.evaluate(() => {
-        const el = document.querySelector("header");
-        if (!el) return null;
-        const cs = getComputedStyle(el);
-        return { paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft };
-      });
-      report.push(`desktop header padding: ${JSON.stringify(pad)}`);
-    }
     await page.screenshot({ path: `${OUT}/${vp}-${name}.png`, fullPage: false });
   }
 

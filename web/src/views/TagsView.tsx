@@ -1,19 +1,39 @@
 import { Link } from "react-router-dom";
+import { CircleCheck, ListTodo, Search, type LucideIcon } from "lucide-react";
 import { useProjects, useTags } from "../queries";
 import { Page } from "./View";
-import { EmptyState } from "../components/TaskList";
+
+const VIEWS: { to: string; icon: LucideIcon; label: string }[] = [
+  { to: "/all", icon: ListTodo, label: "All open" },
+  { to: "/completed", icon: CircleCheck, label: "Completed" },
+  { to: "/search", icon: Search, label: "Search" },
+];
 
 export function TagsView() {
   const projects = useProjects();
   const tags = useTags();
-  const nothing = !projects.data?.length && !tags.data?.length;
 
   return (
-    <Page title="Projects & Tags">
-      {nothing ? (
-        <EmptyState title="Nothing to browse yet" hint="Notes with open tasks become projects; tags on tasks show up here." />
-      ) : (
+    <Page title="Browse">
+      {(
         <div className="space-y-6">
+          {/* On mobile the bottom tabs don't include these, so surface them here.
+              Desktop has them in the sidebar, so this block is mobile-only. */}
+          <section className="md:hidden">
+            <div className="grid grid-cols-1 gap-2">
+              {VIEWS.map((v) => (
+                <Link
+                  key={v.to}
+                  to={v.to}
+                  className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm hover:border-[var(--color-accent)]"
+                  style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
+                >
+                  <v.icon className="size-4 shrink-0 opacity-80" />
+                  <span>{v.label}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
           {!!projects.data?.length && (
             <section>
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-3)" }}>Projects</h2>

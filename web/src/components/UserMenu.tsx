@@ -1,5 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { Settings2 } from "lucide-react";
 import { api } from "../api";
 import { toast } from "../toast";
 
@@ -9,7 +10,7 @@ function Group({ children }: { children: React.ReactNode }) {
   return <div className="px-2.5 pb-0.5 pt-2 text-[0.7rem] font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-3)" }}>{children}</div>;
 }
 
-export function UserMenu({ name }: { name: string }) {
+export function UserMenu({ name, variant = "avatar" }: { name: string; variant?: "avatar" | "gear" }) {
   const navigate = useNavigate();
   const reindex = async () => {
     await api.reindex();
@@ -18,9 +19,19 @@ export function UserMenu({ name }: { name: string }) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button className="grid size-8 place-items-center rounded-full text-sm font-semibold outline-none" style={{ background: "var(--color-accent)", color: "white" }}>
-          {name.slice(0, 1).toUpperCase()}
-        </button>
+        {variant === "gear" ? (
+          <button
+            aria-label="Menu"
+            className="grid size-8 shrink-0 place-items-center rounded-md outline-none transition-colors hover:bg-[var(--color-surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            style={{ color: "var(--color-text-3)" }}
+          >
+            <Settings2 className="size-[1.05rem]" />
+          </button>
+        ) : (
+          <button className="grid size-8 shrink-0 place-items-center rounded-full text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]" style={{ background: "var(--color-accent)", color: "white" }}>
+            {name.slice(0, 1).toUpperCase()}
+          </button>
+        )}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

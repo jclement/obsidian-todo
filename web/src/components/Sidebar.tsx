@@ -1,9 +1,12 @@
+import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import clsx from "clsx";
-import { CalendarDays, Check, CircleCheck, Hash, Inbox, ListTodo, Search, Sun, type LucideIcon } from "lucide-react";
+import { Check, CircleCheck, Hash, Inbox, ListTodo, Search, Sun, type LucideIcon } from "lucide-react";
 import { useCounts, useProjects, useTags } from "../queries";
+import { useAppCtx } from "../app-context";
+import { UserMenu } from "./UserMenu";
 
-function Item({ to, icon: Icon, label, count }: { to: string; icon: LucideIcon; label: string; count?: number }) {
+function Item({ to, icon: Icon, label, count, right }: { to: string; icon: LucideIcon; label: string; count?: number; right?: ReactNode }) {
   return (
     <NavLink
       to={to}
@@ -17,8 +20,28 @@ function Item({ to, icon: Icon, label, count }: { to: string; icon: LucideIcon; 
     >
       <Icon className="size-4 shrink-0 opacity-80" />
       <span className="flex-1 truncate">{label}</span>
-      {count != null && count > 0 && <span className="text-xs tabular-nums" style={{ color: "var(--color-text-3)" }}>{count}</span>}
+      {right ?? (count != null && count > 0 && <span className="text-xs tabular-nums" style={{ color: "var(--color-text-3)" }}>{count}</span>)}
     </NavLink>
+  );
+}
+
+/** Up-to-three-segment pill for the Due item: overdue (red) · today (amber) · later (grey). */
+function DueBadge() {
+  const counts = useCounts();
+  const c = counts.data;
+  if (!c) return null;
+  const segs = [
+    { n: c.overdue, bg: "var(--color-red)", fg: "white" },
+    { n: c.due_today, bg: "var(--color-amber)", fg: "#0a0a0a" },
+    { n: c.due_later, bg: "var(--color-surface-3)", fg: "var(--color-text-2)" },
+  ].filter((s) => s.n > 0);
+  if (!segs.length) return null;
+  return (
+    <span className="flex shrink-0 overflow-hidden rounded-full text-[0.65rem] font-semibold leading-none tabular-nums">
+      {segs.map((s, i) => (
+        <span key={i} className="px-1.5 py-[3px]" style={{ background: s.bg, color: s.fg }}>{s.n}</span>
+      ))}
+    </span>
   );
 }
 
@@ -31,17 +54,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const projects = useProjects();
   const tags = useTags();
   const loc = useLocation();
+  const { vaultName } = useAppCtx();
 
   return (
     <nav className="flex h-full flex-col gap-0.5 overflow-y-auto p-2.5" onClick={onNavigate}>
       <div className="flex items-center gap-2 px-2.5 py-2">
-        <span className="grid size-6 place-items-center rounded-md" style={{ background: "var(--color-accent)", color: "white" }}><Check className="size-4" strokeWidth={3} /></span>
-        <span className="text-sm font-semibold">Obsidian Todo</span>
+        <span className="grid size-6 shrink-0 place-items-center rounded-md" style={{ background: "var(--color-accent)", color: "white" }}><Check className="size-4" strokeWidth={3} /></span>
+        <span className="flex-1 truncate text-sm font-semibold">Obsidian Todo</span>
+        <UserMenu name={vaultName} variant="gear" />
       </div>
 
-      <Item to="/" icon={Sun} label="Due" count={counts.data?.today} />
-      <Item to="/upcoming" icon={CalendarDays} label="Upcoming" count={counts.data?.upcoming} />
       <Item to="/inbox" icon={Inbox} label="Inbox" count={counts.data?.inbox} />
+      <Item to="/" icon={Sun} label="Due" right={<DueBadge />} />
       <Item to="/all" icon={ListTodo} label="All open" count={counts.data?.total_open} />
       <Item to="/completed" icon={CircleCheck} label="Completed" />
       <Item to="/search" icon={Search} label="Search" />

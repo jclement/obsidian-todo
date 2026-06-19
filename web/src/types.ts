@@ -46,7 +46,9 @@ export interface TagSummary {
 
 export interface Counts {
   today: number;
-  upcoming: number;
+  overdue: number;
+  due_today: number;
+  due_later: number;
   inbox: number;
   total_open: number;
 }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
-import { Menu, Plus } from "lucide-react";
 import { todayStr, obsidianUrl } from "./lib/format";
 import { useVisualViewport } from "./lib/useVisualViewport";
 import { useBootstrap } from "./queries";
@@ -19,7 +18,6 @@ import { VoiceModal } from "./components/VoiceModal";
 import { TaskEditor } from "./components/TaskEditor";
 import { Toaster } from "./components/Toaster";
 import { TodayView } from "./views/TodayView";
-import { UpcomingView } from "./views/UpcomingView";
 import { InboxView } from "./views/InboxView";
 import { AllView } from "./views/AllView";
 import { CompletedView } from "./views/CompletedView";
@@ -49,11 +47,11 @@ export function App() {
   // Bulk-add seed: voice drops a transcript here and asks AI to clean it up.
   const [bulkSeed, setBulkSeed] = useState<{ text: string; autoClean: boolean }>({ text: "", autoClean: false });
   const [editing, setEditing] = useState<Task | null>(null);
-  const [navOpen, setNavOpen] = useState(false);
   const [live, setLive] = useState<"connected" | "reconnecting">("reconnecting");
   const [captureTarget, setCaptureTarget] = useState<string | undefined>(undefined);
   const [obsidianPath, setObsidianPath] = useState<string | null>(null);
   const loc = useLocation();
+  const title = useRouteTitle();
 
   // New tasks inherit the current view: due today on Today, the tag on a tag
   // view. (Project target is handled separately via captureTarget.)
@@ -123,50 +121,23 @@ export function App() {
           <Sidebar />
         </aside>
 
-        {navOpen && (
-          <div className="fixed inset-0 z-50 md:hidden" onClick={() => setNavOpen(false)}>
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <aside className="absolute inset-y-0 left-0 w-72 overflow-y-auto overscroll-contain border-r pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
-              <Sidebar onNavigate={() => setNavOpen(false)} />
-            </aside>
-          </div>
-        )}
-
         <main className="flex min-w-0 flex-1 flex-col">
+          {/* Reverse status indicator: a banner only when the live link is down. */}
+          {live === "reconnecting" && (
+            <div className="shrink-0 px-4 py-1.5 text-center text-xs font-medium" style={{ background: "var(--color-red)", color: "white" }}>
+              Reconnecting… live updates are paused
+            </div>
+          )}
+
+          {/* Mobile-only top bar: centered view title + user menu. No hamburger —
+              the bottom tabs cover navigation. Desktop has no top bar at all. */}
           <header
-            className="sticky top-0 z-30 border-b px-4 pb-2.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:pb-4 md:pt-[max(1.5rem,env(safe-area-inset-top))]"
+            className="sticky top-0 z-30 flex items-center gap-2 border-b px-4 pb-2.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl md:hidden"
             style={{ borderColor: "var(--color-border)", background: "color-mix(in oklab, var(--color-surface) 80%, transparent)" }}
           >
-            {/* Align the toolbar to the same column as the content below it. */}
-            <div className="mx-auto flex w-full max-w-5xl items-center gap-3">
-              <button
-                className="-ml-1.5 grid size-11 place-items-center rounded-lg outline-none active:bg-[var(--color-surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] md:hidden"
-                onClick={() => setNavOpen(true)}
-                aria-label="Menu"
-              >
-                <Menu className="size-5" />
-              </button>
-              {/* Search: fills the left of the toolbar on desktop, hidden on phones. */}
-              <button
-                onClick={() => setPaletteOpen(true)}
-                className="hidden items-center gap-2 rounded-lg border px-3 py-2 text-sm outline-none transition-colors hover:border-[var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:flex md:w-72 md:justify-between"
-                style={{ borderColor: "var(--color-border)", color: "var(--color-text-3)" }}
-              >
-                <span>Search tasks…</span>
-                <kbd className="rounded bg-[var(--color-surface-3)] px-1.5 py-0.5 text-xs">⌘K</kbd>
-              </button>
-              <div className="flex-1" />
-              <button
-                onClick={() => setCapture("single")}
-                className="hidden items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] md:flex"
-                style={{ background: "var(--color-accent)" }}
-                title="New task (q)"
-              >
-                <Plus className="size-4" /> Add
-              </button>
-              <span title={live === "connected" ? "Live updates connected" : "Reconnecting…"} className="mx-1 size-2.5 shrink-0 rounded-full" style={{ background: live === "connected" ? "var(--color-green)" : "var(--color-amber)" }} />
-              <UserMenu name={vaultName} />
-            </div>
+            <div className="size-8 shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1 truncate text-center text-base font-semibold">{title}</div>
+            <UserMenu name={vaultName} />
           </header>
 
           {syncDown && (
@@ -181,10 +152,9 @@ export function App() {
             </div>
           )}
 
-          <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-[calc(var(--nav-h,4rem)+1rem)] [-webkit-overflow-scrolling:touch] sm:px-6 md:max-w-5xl md:px-8 md:pb-8">
+          <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-[calc(var(--nav-h,4rem)+1rem)] [-webkit-overflow-scrolling:touch] sm:px-6 md:max-w-5xl md:px-8 md:pt-7 md:pb-8">
             <Routes>
               <Route path="/" element={<TodayView />} />
-              <Route path="/upcoming" element={<UpcomingView />} />
               <Route path="/inbox" element={<InboxView />} />
               <Route path="/all" element={<AllView />} />
               <Route path="/completed" element={<CompletedView />} />
@@ -235,6 +205,23 @@ export function App() {
       </MotionConfig>
     </AppContext.Provider>
   );
+}
+
+/** Title for the mobile top bar, derived from the current route. */
+function useRouteTitle(): string {
+  const loc = useLocation();
+  const [params] = useSearchParams();
+  const p = loc.pathname;
+  if (p === "/") return "Due";
+  if (p === "/inbox") return "Inbox";
+  if (p === "/all") return "All open";
+  if (p === "/completed") return "Completed";
+  if (p === "/tags") return "Browse";
+  if (p === "/search") return "Search";
+  if (p.startsWith("/settings")) return "Settings";
+  if (p.startsWith("/tag/")) return "#" + decodeURIComponent(p.slice("/tag/".length));
+  if (p === "/project") return params.get("path")?.split("/").pop()?.replace(/\.md$/, "") ?? "Project";
+  return "Obsidian Todo";
 }
 
 function FooterKbd({ children }: { children: ReactNode }) {

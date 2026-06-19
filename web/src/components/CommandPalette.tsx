@@ -1,6 +1,6 @@
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Hash, Inbox, ListTodo, Search, Settings2, Sun } from "lucide-react";
+import { Hash, Inbox, ListTodo, Search, Settings2, Sun } from "lucide-react";
 import { useProjects, useTags } from "../queries";
 
 const ico = "size-4 shrink-0 opacity-70";
@@ -58,7 +58,6 @@ export function CommandPalette({
 
         <Command.Group heading="Go to" className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-[var(--color-text-3)]">
           <Item onSelect={() => go("/")}><Sun className={ico} /> Due</Item>
-          <Item onSelect={() => go("/upcoming")}><CalendarDays className={ico} /> Upcoming</Item>
           <Item onSelect={() => go("/inbox")}><Inbox className={ico} /> Inbox</Item>
           <Item onSelect={() => go("/all")}><ListTodo className={ico} /> All open</Item>
           <Item onSelect={() => go("/search")}><Search className={ico} /> Search</Item>
