@@ -1,0 +1,6 @@
+# Capacitor / npm
+node_modules/
+
+# Generated native project (run `npx cap add ios` locally). It contains
+# machine-specific signing + CocoaPods; regenerate rather than commit.
+ios/

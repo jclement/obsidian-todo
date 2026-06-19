@@ -121,6 +121,21 @@ describe("derived mode end-to-end (behind a proxy)", () => {
     expect(res.headers.get("www-authenticate")).toContain(`https://${PROXY}/.well-known`);
   });
 
+  test("apple-app-site-association: 404 unset, JSON when IOS_APP_ID set", async () => {
+    const prev = process.env.IOS_APP_ID;
+    delete process.env.IOS_APP_ID;
+    expect((await proxied("/.well-known/apple-app-site-association")).status).toBe(404);
+
+    process.env.IOS_APP_ID = "ABCDE12345.net.onewheelgeek.todo";
+    const res = await proxied("/.well-known/apple-app-site-association");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(await res.json()).toEqual({ webcredentials: { apps: ["ABCDE12345.net.onewheelgeek.todo"] } });
+
+    if (prev === undefined) delete process.env.IOS_APP_ID;
+    else process.env.IOS_APP_ID = prev;
+  });
+
   test("setup registration options use the proxy host as rpID", async () => {
     const res = await proxied("/setup/webauthn/options", {
       method: "POST",

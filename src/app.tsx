@@ -65,6 +65,16 @@ export function createApp(deps: AppDeps) {
   app.get("/healthz", (c) => c.json({ ok: true }));
   app.use("/assets/*", serveStatic({ root: "./public", rewriteRequestPath: (p) => p.replace(/^\/assets/, "") }));
 
+  // Apple App Site Association — lets a native (Capacitor/WKWebView) wrapper use
+  // this origin's passkeys via the Associated Domains entitlement. Set
+  // IOS_APP_ID="<TeamID>.<bundleId>" to enable. Served as JSON, unauthenticated,
+  // no redirects (Apple's CDN fetches it directly).
+  app.get("/.well-known/apple-app-site-association", (c) => {
+    const appId = process.env.IOS_APP_ID?.trim();
+    if (!appId) return c.text("Not found", 404);
+    return c.json({ webcredentials: { apps: [appId] } });
+  });
+
   // --- OAuth metadata + public endpoints ---
   app.route("/.well-known", wellKnownRouter());
   app.use("/oauth/token", rateLimit("oauth", 30));

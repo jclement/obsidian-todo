@@ -23,6 +23,9 @@ services:
     stop_grace_period: 30s
     environment:
       PUBLIC_URL: https://notes.example.com   # ← set to your real https hostname
+      # For the native iOS wrapper (apple/): serves the Apple App Site
+      # Association so the app's passkeys work. "<TeamID>.<bundleId>".
+      # IOS_APP_ID: ABCDE12345.net.onewheelgeek.todo
     volumes:
       - ./data:/data
 
