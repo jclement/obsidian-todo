@@ -30,10 +30,12 @@ function DueBadge() {
   const counts = useCounts();
   const c = counts.data;
   if (!c) return null;
+  // Fixed colours (not theme tokens) so they stay vivid and keep contrast on
+  // the selected row's accent-soft background.
   const segs = [
-    { n: c.overdue, bg: "var(--color-red)", fg: "white" },
-    { n: c.due_today, bg: "var(--color-amber)", fg: "#0a0a0a" },
-    { n: c.due_later, bg: "var(--color-surface-3)", fg: "var(--color-text-2)" },
+    { n: c.overdue, bg: "#ef4444", fg: "white" },
+    { n: c.due_today, bg: "#facc15", fg: "#1c1917" },
+    { n: c.due_later, bg: "#71717a", fg: "white" },
   ].filter((s) => s.n > 0);
   if (!segs.length) return null;
   return (
