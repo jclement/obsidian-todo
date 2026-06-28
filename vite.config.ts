@@ -1,6 +1,29 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+// Stamp sw.js with the entry chunk's content hash. The hash changes whenever app
+// code changes, so sw.js's bytes change every deploy — that byte difference is
+// what makes the browser detect a new service worker (and, via skipWaiting +
+// controllerchange, reload). Without it, an assets-only deploy leaves sw.js
+// identical and an installed PWA never picks up the update.
+function stampServiceWorker(): Plugin {
+  return {
+    name: "stamp-service-worker",
+    apply: "build",
+    writeBundle(options, bundle) {
+      const dir = options.dir;
+      if (!dir) return;
+      const swPath = join(dir, "sw.js");
+      if (!existsSync(swPath)) return;
+      const entry = Object.values(bundle).find((c) => c.type === "chunk" && c.isEntry);
+      const buildId = entry?.type === "chunk" ? entry.fileName.replace(/.*[-.]([^.]+)\.js$/, "$1") : String(Object.keys(bundle).length);
+      writeFileSync(swPath, readFileSync(swPath, "utf8").replace(/__BUILD_ID__/g, buildId));
+    },
+  };
+}
 
 // The SPA lives in web/ and builds to dist/client, which the Bun server serves
 // in production. In dev, `vite` runs on :5173 and proxies the backend prefixes
@@ -12,7 +35,7 @@ const proxied = ["/api", "/assets", "/login", "/logout", "/setup", "/oauth", "/m
 
 export default defineConfig({
   root: "web",
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), stampServiceWorker()],
   build: {
     outDir: "../dist/client",
     emptyOutDir: true,

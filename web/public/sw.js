@@ -7,7 +7,13 @@
 //
 // Hashed /static assets are immutable, so cache-first. API GETs are network-first
 // with a cached fallback for offline reading. Writes always hit the network.
-const CACHE = "obtodo-v3";
+//
+// BUILD is replaced at build time (vite.config.ts → stampServiceWorker) with the
+// entry chunk's content hash, so this file's bytes change on every deploy. That
+// byte change is what the browser uses to detect a new SW; keying CACHE to it
+// also drops the previous build's cache on activate.
+const BUILD = "__BUILD_ID__";
+const CACHE = "obtodo-" + BUILD;
 // Precache "/" so a cold start works offline (and survives cache eviction);
 // navigations stay network-first below, so it's only ever a fallback.
 const SHELL = ["/", "/icon.svg", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];

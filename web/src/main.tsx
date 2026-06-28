@@ -34,7 +34,19 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () =>
     navigator.serviceWorker
       .register("/sw.js")
-      .then((reg) => reg.update().catch(() => {})) // check for a new SW every load
+      .then((reg) => {
+        // An installed PWA is usually *resumed*, not reloaded, so `load` fires
+        // once and never again. Re-check for a newer SW whenever the app returns
+        // to the foreground and on a slow timer for long-lived sessions. A newer
+        // sw.js (its bytes change every deploy) self-activates via skipWaiting →
+        // controllerchange → reload above, so updates land without reinstalling.
+        const check = () => reg.update().catch(() => {});
+        check();
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") check();
+        });
+        setInterval(check, 30 * 60 * 1000);
+      })
       .catch(() => {}),
   );
 }
