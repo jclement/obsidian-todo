@@ -94,6 +94,15 @@ body {
   overscroll-behavior: none;
 }
 
+/* Toggled while the mobile FAB is held: kills the iOS long-press selection of
+ * surrounding content. Unlayered + !important so it beats any selectable child. */
+body.no-select,
+body.no-select * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
 /* iOS zooms into any focused control whose font is < 16px. Force 16px on every
  * touch device (keyed to pointer, not width, so it also covers large/landscape
  * phones where the md: 14px field styles would otherwise apply). */

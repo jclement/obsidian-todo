@@ -51,10 +51,23 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      document.body.classList.remove("no-select"); // never leave selection locked if we unmount mid-press
+    };
   }, []);
 
   const clear = () => window.clearTimeout(hold.current);
+
+  // The FAB itself is user-select:none, but iOS's long-press gesture selects the
+  // *surrounding* content (nav labels, the task list) while the finger is held.
+  // Suppress selection document-wide for the duration of the press and drop any
+  // range the gesture managed to start, then restore on release.
+  const lockSelection = () => {
+    document.body.classList.add("no-select");
+    window.getSelection?.()?.removeAllRanges();
+  };
+  const unlockSelection = () => document.body.classList.remove("no-select");
 
   // Tap = quick add. Press-and-hold (~350ms) = voice dictation, but only when AI
   // is configured. We capture the pointer and abort on movement / cancel so a
@@ -63,9 +76,11 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
     fired.current = false;
     origin.current = { x: e.clientX, y: e.clientY };
     e.currentTarget.setPointerCapture?.(e.pointerId);
+    lockSelection();
     if (!aiEnabled) return;
     hold.current = window.setTimeout(() => {
       fired.current = true;
+      window.getSelection?.()?.removeAllRanges();
       onVoice();
     }, 350);
   };
@@ -75,11 +90,13 @@ export function MobileNav({ onAdd, onVoice, aiEnabled }: { onAdd: () => void; on
   };
   const up = () => {
     clear();
+    unlockSelection();
     if (!fired.current && origin.current) onAdd();
     origin.current = null;
   };
   const cancel = () => {
     clear();
+    unlockSelection();
     fired.current = false;
     origin.current = null;
   };
